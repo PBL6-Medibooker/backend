@@ -1,5 +1,6 @@
 const User = require('./User')
 const Speciality = require('./Speciality')
+const Region = require('./Region')
 
 const bcrypt = require('bcrypt')
 const validator = require('validator')
@@ -24,9 +25,10 @@ const Doctor_Schema = new Schema({
         type: String,
         default: 'undisclosed'
     },
-    region: {
-        type: String,
-        default: 'undisclosed'
+    region_id: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Region', 
+        required: false 
     },
     proof: {
         type: Buffer,
