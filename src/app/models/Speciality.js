@@ -10,7 +10,8 @@ const Speciality = new Schema({
         type: String 
     },
     speciality_image: {
-         type: Buffer 
+        type: Buffer,
+        default: null 
     },
     is_deleted: { 
         type: Boolean, 

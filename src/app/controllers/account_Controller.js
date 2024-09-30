@@ -27,7 +27,7 @@ class user_Controller{
         return jwt.sign({_id}, process.env.JWTSecret, {expiresIn: '1d'})
     }
 
-    acc_Login = async(req, res) =>{
+    acc_Login = async(req, res) => {
         // get info from body
         const {email, password} = req.body
         // get account
@@ -50,7 +50,7 @@ class user_Controller{
         }
     }
 
-    acc_Signup = async(req, res) =>{
+    acc_Signup = async(req, res) => {
         try{
             // wait for file upload
             await uploadPromise(req, res)
