@@ -18,9 +18,16 @@ class region_Controller{
 
     get_Region_List = async(req, res) =>{
         try{
-            // find list of region
-            const regions = await Region.find()
+            let regions
+            const {hidden_state} = req.body
 
+            // find list of region
+            if(hidden_state == 'true'){
+                regions = await Region.find({is_deleted: true})
+            }else{
+                regions = await Region.find({is_deleted: false})
+            }
+            
             res.status(200).json(regions)
         }catch(error){
             console.log(error.message)

@@ -9,7 +9,7 @@ const storage = multer.memoryStorage()
 const upload = multer({
   storage: storage,
   fileFilter: (res, file, cb) =>{
-    if(file.mimetype === 'image/'){
+    if(file.mimetype.startsWith('image/')){
       cb(null, true)
     }else{
       cb(new Error('Only image files are allowed'))
@@ -64,7 +64,7 @@ class speciality_Controller{
                 }
                 return speciality
             }))
-
+            // console.log(specialities_With_Png_Images)
             res.status(200).json(specialities_With_Png_Images)
         }catch(error){
             console.log(error.message)
