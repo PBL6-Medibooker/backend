@@ -80,6 +80,38 @@ class user_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    get_Account_List = async(req, res) =>{
+        try{
+            let accounts, query
+            const {user, hidden_state, verified} = req.body
+
+            query = { is_deleted: hidden_state }
+
+            if (user === true) { 
+                // Handle users
+
+                query.__t = { $ne: "Doctor" }
+
+                accounts = await User.find(query)
+            } else { 
+                // Handle doctors
+                query = { is_deleted: hidden_state }
+            
+                if (verified !== undefined) {
+                    query.verified = verified
+                }
+            
+                accounts = await Doctor.find(query)
+            }
+
+            res.status(200).json(accounts)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+    
 }
 
 module.exports = new user_Controller

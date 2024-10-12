@@ -6,6 +6,7 @@ const router = express.Router()
 
 router.post('/login', account_Controller.acc_Login)
 router.post('/signup', account_Controller.acc_Signup)
+router.get('/acc-list', account_Controller.get_Account_List)
 
 module.exports = router
 
