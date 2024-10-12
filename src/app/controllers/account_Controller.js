@@ -104,7 +104,7 @@ class user_Controller{
             
                 accounts = await Doctor.find(query)
             }
-
+            
             res.status(200).json(accounts)
         }catch(error){
             console.log(error.message)
