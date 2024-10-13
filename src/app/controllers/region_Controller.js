@@ -1,10 +1,17 @@
 const Region = require('../models/Region')
+const { exists } = require('../models/User')
 
 class region_Controller{
     add_Region = async(req, res) =>{
         try{
             // get info from body
             const {name} = req.body
+            
+            const exists_reg = await Region.findOne({name})
+
+            if(exists_reg){
+                throw Error('Region already exits')
+            }
 
             // create
             const region = await Region.create({name})
@@ -80,6 +87,33 @@ class region_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    restore_Deleted_Region = async(req, res) =>{
+        try{
+            // get id list
+            const {region_Ids} = req.body
+
+            // if no ids
+            if (!region_Ids || !Array.isArray(region_Ids) || region_Ids.length === 0) {
+                return res.status(400).json({error: 'No IDs provided'});
+            }
+
+            // update
+            const result = await Region.updateMany(
+                {_id: {$in: region_Ids}},
+                {is_deleted: false}
+            )
+            
+            res.status(200).json({
+                message: 'Region restored',
+                modifiedCount: result.modifiedCount
+            })
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
     perma_Delete_Region = async(req, res) =>{
         try{
             // get id list

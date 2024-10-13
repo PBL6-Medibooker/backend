@@ -17,10 +17,16 @@ const Doctor_Schema = new Schema({
         type: Boolean,
         default: false
     },
-    working_hour: {
-        type: String,
-        default: 'undisclosed'
-    },
+    working_hours: [{
+        day: String,
+        start_time: String,
+        end_time: String
+    }],
+    appointment_hours: [{
+        day: String,
+        start_time: String,
+        end_time: String
+    }],
     bio: {
         type: String,
         default: 'undisclosed'

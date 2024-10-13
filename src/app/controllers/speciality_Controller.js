@@ -29,6 +29,12 @@ class speciality_Controller{
             const {name, description} = req.body
             const speciality_image = req.file ? req.file.buffer : null
 
+            const exists_spec = await Speciality.findOne(name)
+
+            if(exists_spec){
+                throw Error('Speciality already exits')
+            }
+
             //create
             const speciality = await Speciality.create({name, description, speciality_image})
 
@@ -85,10 +91,10 @@ class speciality_Controller{
             const speciality_Id = req.params.id
 
             // find speciality
-            const speciality = await Speciality.findById(speciality_Id);
+            let speciality = await Speciality.findById(speciality_Id);
 
             if (!speciality) {
-                return res.status(404).json({error: 'Speciality not found'});
+                return res.status(404).json({error: 'Speciality not found'})
             }
 
             // update
@@ -129,6 +135,33 @@ class speciality_Controller{
 
             res.status(200).json({
                 message: 'Speciality soft deleted',
+                modifiedCount: result.modifiedCount
+            })
+            
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    restore_Deleted_Specialty = async(req, res) => {
+        try{
+            // get id list
+            const {speciality_Ids} = req.body
+
+            // if no ids
+            if (!speciality_Ids || !Array.isArray(speciality_Ids) || speciality_Ids.length === 0) {
+                return res.status(400).json({error: 'No IDs provided'});
+            }
+
+            // update
+            const result = await Speciality.updateMany(
+                {_id: {$in: speciality_Ids}},
+                {is_deleted: false}
+            )
+
+            res.status(200).json({
+                message: 'Speciality restored',
                 modifiedCount: result.modifiedCount
             })
             

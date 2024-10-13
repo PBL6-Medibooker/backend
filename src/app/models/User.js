@@ -91,5 +91,26 @@ User.statics.login = async function(email, password){
 
     return user
 }
+// change password
+User.statics.change_pass = async function(email, password){
+
+    if(!validator.isStrongPassword(password)){
+        throw Error("Password not strong enough!")
+    }
+
+    const match = await bcrypt.compare(password, user.password)
+
+    if(match){
+        throw Error('New password must be different from the old one')
+    }
+
+    //hassing password
+    const salt = await bcrypt.genSalt(10)
+    const hass = await bcrypt.hash(password, salt)
+
+    const user = await this.findOneAndUpdate({email}, {password: hass})
+
+    return user
+}
 
 module.exports = mongoose.model('User', User)

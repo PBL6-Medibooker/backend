@@ -3,7 +3,8 @@ const Schema = mongoose.Schema
 
 const Speciality = new Schema({
     name: { 
-        type: String, 
+        type: String,
+        unique: true, 
         required: true 
     },
     description: { 

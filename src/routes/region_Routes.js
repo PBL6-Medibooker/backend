@@ -8,5 +8,6 @@ router.post('/add-region', region_Controller.add_Region)
 router.post('/update-region/:id', region_Controller.update_Region)
 router.post('/soft-delete-region', region_Controller.soft_Delete_Region)
 router.post('/delete-region', region_Controller.perma_Delete_Region)
+router.post('/restore-region', region_Controller.restore_Deleted_Region)
 
 module.exports = router

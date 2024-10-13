@@ -1,5 +1,6 @@
 const User = require('../models/User')
 const Doctor = require('../models/Doctor')
+const Region = require('../models/Region')
 
 const multer = require('multer')
 const { promisify } = require('util')
@@ -9,18 +10,30 @@ require('dotenv').config()
 
 const storage = multer.memoryStorage()
 
-const upload = multer({
-  storage: storage,
-  fileFilter: (res, file, cb) =>{
-    if(file.mimetype === 'application/pdf'){
-      cb(null, true)
-    }else{
-      cb(new Error('Only PDF files are allowed'))
+const upload_pdf = multer({
+    storage: storage,
+    fileFilter: (res, file, cb) =>{
+        if(file.mimetype === 'application/pdf'){
+            cb(null, true)
+        }else{
+            cb(new Error('Only PDF files are allowed'))
+        }
     }
-  }
 }).single('proof')
 
-const uploadPromise = promisify(upload)
+const upload_img = multer({
+    storage: storage,
+    fileFilter: (res, file, cb) =>{
+        if(file.mimetype.startsWith('image/')){
+            cb(null, true)
+        }else{
+            cb(new Error('Only image files are allowed'))
+        }
+    }
+}).single('profile_image')
+
+const upload_Promise_pdf = promisify(upload_pdf)
+const upload_Promise_img = promisify(upload_img)
 
 class user_Controller{
     create_Token = (_id) => {
@@ -30,6 +43,7 @@ class user_Controller{
     acc_Login = async(req, res) => {
         // get info from body
         const {email, password} = req.body
+        console.log(req.headers['content-type'])
         // get account
         try{
             let acc
@@ -53,7 +67,7 @@ class user_Controller{
     acc_Signup = async(req, res) => {
         try{
             // wait for file upload
-            await uploadPromise(req, res)
+            await upload_Promise_pdf(req, res)
             
             // get info from body
             const {email, password, username, phone, is_doc} = req.body
@@ -104,8 +118,187 @@ class user_Controller{
             
                 accounts = await Doctor.find(query)
             }
+
+            const accounts_With_Png_Images = await Promise.all(accounts.map(async (accounts) => {
+                if (accounts.profile_image) {
+
+                    // convert buffer to png
+                    const png_Buffer = await sharp(accounts.profile_image)
+                        .png()
+                        .toBuffer()
+    
+                    const base64_Image = png_Buffer.toString('base64')
+                    accounts.profile_image = `data:image/png;base64,${base64_Image}`
+                }
+                return accounts
+            }))
             
+            res.status(200).json(accounts_With_Png_Images)
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    get_Account = async(req, res) =>{
+        try{
+            // get id
+            const email = req.params.id
+
+            let accounts = await User.findOne(email)
+
+            if (accounts.profile_image) {
+
+                // convert buffer to png
+                const png_Buffer = await sharp(accounts.profile_image)
+                    .png()
+                    .toBuffer()
+
+                const base64_Image = png_Buffer.toString('base64')
+                accounts.profile_image = `data:image/png;base64,${base64_Image}`
+            }
+
             res.status(200).json(accounts)
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    update_Acc_Info = async(req, res) =>{
+        try{
+            // wait for file upload
+            await upload_Promise_img(req, res)
+
+            // get info from body
+            const {username, phone, underlying_condition} = req.body
+            const profile_image = req.file ? req.file.buffer : null
+
+            // get id
+            const account_Id = req.params.id
+
+            // find account
+            let account = await User.findById(account_Id)
+
+            if(!account){
+                return res.status(404).json({error: 'Account not found'})
+            }
+
+            // update
+            if(username){
+                account.username = username
+            }
+            if(phone){
+                account.phone = phone
+            }
+            if(underlying_condition){
+                account.underlying_condition = underlying_condition
+            }
+            if(profile_image){
+                account.profile_image = profile_image
+            }
+
+            await account.save()
+
+            res.status(200).json(account)
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    soft_Delete_Account = async(req, res) =>{
+        try{
+            // get id list
+            const {account_Ids} = req.body
+
+            // if no ids
+            if (!account_Ids || !Array.isArray(account_Ids) || account_Ids.length === 0) {
+                return res.status(400).json({error: 'No IDs provided'});
+            }
+
+            // update
+            const result = await User.updateMany(
+                {_id: {$in: account_Ids}},
+                {is_deleted: true}
+            )
+
+            res.status(200).json({
+                message: 'Account soft deleted',
+                modifiedCount: result.modifiedCount
+            })
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    restore_Deleted_Account = async(req, res) =>{
+        try{
+            // get id list
+            const {account_Ids} = req.body
+
+            // if no ids
+            if (!account_Ids || !Array.isArray(account_Ids) || account_Ids.length === 0) {
+                return res.status(400).json({error: 'No IDs provided'});
+            }
+
+            // update
+            const result = await User.updateMany(
+                {_id: {$in: account_Ids}},
+                {is_deleted: false}
+            )
+
+            res.status(200).json({
+                message: 'Account restored',
+                modifiedCount: result.modifiedCount
+            })
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    perma_Delete_Account = async(req, res) =>{
+        try{
+            // get id list
+            const {account_Ids} = req.body
+
+            // if no ids
+            if (!account_Ids || !Array.isArray(account_Ids) || account_Ids.length === 0) {
+                return res.status(400).json({error: 'No IDs provided'});
+            }
+
+            // delete
+            const result = await User.deleteMany(
+                {_id: {$in: account_Ids}}
+            )
+
+            res.status(200).json({
+                message: 'Account deleted',
+                modifiedCount: result.modifiedCount
+            })
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    change_password = async(req, res) =>{
+        try{
+            // const {email} = req.user
+            const {email, new_password} = req.body
+            const user = await User.change_pass(email, new_password)
+
+            console.log(user)
+            res.status(200).json({email, user})
+
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})

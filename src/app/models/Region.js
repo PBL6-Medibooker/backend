@@ -3,7 +3,8 @@ const Schema = mongoose.Schema
 
 const Region = new Schema({
     name: { 
-        type: String, 
+        type: String,
+        unique: true,
         required: true 
     },
     is_deleted: { 
