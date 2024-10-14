@@ -8,7 +8,7 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const Doctor_Schema = new Schema({
-    specialty_id: { 
+    speciality_id: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Speciality', 
         required: false 
@@ -73,6 +73,12 @@ Doctor_Schema.statics.add_Doctor = async function(email, password, username, pho
     const doctor = await this.create({email, password: hass, username, phone, proof})
 
     return doctor
+}
+
+Doctor_Schema.statics.Is_Time_Overlap = async function(new_times, existing_times) {
+    for(let new_time of new_times){
+        
+    }
 }
 
 const Doctor = User.discriminator('Doctor', Doctor_Schema)

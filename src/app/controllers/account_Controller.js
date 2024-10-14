@@ -1,6 +1,7 @@
 const User = require('../models/User')
 const Doctor = require('../models/Doctor')
 const Region = require('../models/Region')
+const Speciality = require('../models/Speciality')
 
 const multer = require('multer')
 const { promisify } = require('util')
@@ -298,6 +299,66 @@ class user_Controller{
 
             console.log(user)
             res.status(200).json({email, user})
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    update_Doctor_Info = async(req, res) =>{
+        try{
+            // get info from body
+            const {speciality, region, bio} = req.body
+
+            // get id
+            const account_Id = req.params.id
+
+            // find account
+            let account = await Doctor.findById(account_Id)
+
+            if(!account){
+                return res.status(404).json({error: 'Account not found'})
+            }
+
+            // update
+            if(speciality){
+                const speciality_id = await Speciality.findOne({ name: speciality }, { _id: 1 })
+                account.speciality_id = speciality_id.id
+            }
+
+            if(region){
+                const region_id = await Region.findOne({name: region}, { _id: 1 })
+                account.region_id = region_id.id
+            }
+
+            if(bio){
+                account.bio = bio
+            }
+
+            await account.save()
+            
+            res.status(200).json(account)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    upload_Doctor_Proof = async(req, res) =>{
+        try{
+            await upload_Promise_pdf(req, res)
+            const proof = req.file ? req.file.buffer : null
+
+            // get id
+            const account_Id = req.params.id
+
+            // update
+            const account = await Doctor.findByIdAndUpdate(account_Id,
+                {proof}, 
+                {new: true})
+
+            res.status(200).json(account)
 
         }catch(error){
             console.log(error.message)
