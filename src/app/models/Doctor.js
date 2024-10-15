@@ -2,8 +2,13 @@ const User = require('./User')
 const Speciality = require('./Speciality')
 const Region = require('./Region')
 
+const Moment = require('moment')
+const MomentRange = require('moment-range')
+const moment = MomentRange.extendMoment(Moment)
+
 const bcrypt = require('bcrypt')
 const validator = require('validator')
+
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
@@ -17,15 +22,11 @@ const Doctor_Schema = new Schema({
         type: Boolean,
         default: false
     },
-    working_hours: [{
-        day: String,
-        start_time: String,
-        end_time: String
-    }],
-    appointment_hours: [{
-        day: String,
-        start_time: String,
-        end_time: String
+    active_hours: [{
+        day: String, // days of week
+        start_time: String, // hours:minutes
+        end_time: String, // hours:minutes
+        hour_type: String // working or appointment
     }],
     bio: {
         type: String,
@@ -75,10 +76,53 @@ Doctor_Schema.statics.add_Doctor = async function(email, password, username, pho
     return doctor
 }
 
-Doctor_Schema.statics.Is_Time_Overlap = async function(new_times, existing_times) {
-    for(let new_time of new_times){
+Doctor_Schema.statics.Is_Time_Overlap = async function(new_time, account_Id, excluded_time = {}) {
+
+    const account_active_hours = await this.findById(account_Id, {active_hours: 1})
+
+    const existing_Times = account_active_hours?.active_hours || []
+
+    if(!existing_Times || existing_Times.length === 0){ // no existing time frame
+        return false // no overlapping time frame
+    }
+
+    const new_Start = new_time.start_time.split(':')
+    const new_End = new_time.end_time.split(':')
+
+    const new_Range = moment.range(
+        moment().set({ hours: new_Start[0], minutes: new_Start[1] }),
+        moment().set({ hours: new_End[0], minutes: new_End[1] })
+    ) 
+
+    for(let existing_Time of existing_Times){
+
+        if (existing_Time.day !== new_time.day || existing_Time.hour_type !== new_time.hour_type) {
+            continue // skip if different day or type
+        }
+
+        if(excluded_time.day === existing_Time.day 
+           && excluded_time.start_time === existing_Time.start_time 
+           && excluded_time.end_time === existing_Time.end_time
+           && excluded_time.hour_type === existing_Time.hour_type
+        ){
+            continue // skip a day for updating
+        }
+        
+        let existing_Start = existing_Time.start_time.split(':') // get hours and minutes
+        let existing_End = existing_Time.end_time.split(':') // get hours and minutes
+
+        let existing_Range = moment.range(
+            moment().set({hours: existing_Start[0], minutes: existing_Start[1]}),
+            moment().set({ hours: existing_End[0], minutes: existing_End[1] })
+        )
+
+        if(existing_Range.overlaps(new_Range)){
+            return true // time frames overlap
+        }
         
     }
+
+    return false
 }
 
 const Doctor = User.discriminator('Doctor', Doctor_Schema)

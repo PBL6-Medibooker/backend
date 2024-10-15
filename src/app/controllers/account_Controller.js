@@ -88,7 +88,7 @@ class user_Controller{
 
             // create token and respone
             const token = this.create_Token(acc._id)
-            res.status(200).json({email, token, role})
+            res.status(201).json({email, token, role})
 
         }catch(error){ //if user account
             console.log(error.message)
@@ -323,12 +323,12 @@ class user_Controller{
 
             // update
             if(speciality){
-                const speciality_id = await Speciality.findOne({ name: speciality }, { _id: 1 })
+                const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
                 account.speciality_id = speciality_id.id
             }
 
             if(region){
-                const region_id = await Region.findOne({name: region}, { _id: 1 })
+                const region_id = await Region.findOne({name: region}, {_id: 1})
                 account.region_id = region_id.id
             }
 
@@ -359,6 +359,143 @@ class user_Controller{
                 {new: true})
 
             res.status(200).json(account)
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    get_Doctor_Active_Hour_List = async(req, res) =>{
+        try{
+            // get id
+            const account_Id = req.params.id
+
+            // find doctor
+            const doctor = await Doctor.findById(account_Id)
+
+            res.status(201).json(doctor.active_hours)
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    add_Doctor_Active_Hour = async(req, res) =>{
+        try{
+            const {day, start_time, end_time, hour_type} = req.body
+
+            if(!day || !start_time || !end_time || !hour_type){
+                throw Error('Missing information')
+            }
+
+            // get id
+            const account_Id = req.params.id
+
+            // check overlap
+            const new_Active_Hour = {day, start_time, end_time, hour_type}
+
+            const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id)
+            
+            if(is_overlap){
+                throw Error('Overlapping time frame')
+            }
+
+            // add
+            const doctor = await Doctor.findByIdAndUpdate(
+                account_Id,
+                {$push: {active_hours: new_Active_Hour}},
+                {new: true}
+            )
+
+            res.status(201).json(doctor.active_hours)
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    update_Doctor_Active_Hour = async(req, res) =>{
+        try{
+            const {day, start_time, end_time, hour_type, old_day, old_start_time, old_end_time, old_hour_type} = req.body
+
+            if(!day || !start_time || !end_time || !hour_type){
+                throw Error('Missing information')
+            }
+
+            // get id
+            const account_Id = req.params.id
+
+            // check overlap
+            const excluded_time = {
+                day: old_day, 
+                start_time: old_start_time, 
+                end_time: old_end_time, 
+                hour_type: old_hour_type
+            }
+            const new_Active_Hour = {day, start_time, end_time, hour_type}
+
+            const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time)
+            
+            if(is_overlap){
+                throw Error('Overlapping time frame')
+            }
+
+            // find doctor
+            const doctor = await Doctor.findById(account_Id)
+
+            // find old active hour
+            const index = doctor.active_hours.findIndex(time_frame =>
+                time_frame.day === old_day &&
+                time_frame.start_time === old_start_time &&
+                time_frame.end_time === old_end_time &&
+                time_frame.hour_type === old_hour_type
+            )
+
+            // update
+            doctor.active_hours[index] = new_Active_Hour
+
+            await doctor.save()
+
+            res.status(200).json({change: doctor.active_hours[index], 
+                active_hours: doctor.active_hours})
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    delete_Doctor_Active_Hour = async(req, res) =>{
+        try{
+            const {day, start_time, end_time, hour_type} = req.body
+
+            if(!day || !start_time || !end_time || !hour_type){
+                throw Error('Missing information')
+            }
+
+            // get id
+            const account_Id = req.params.id
+
+            // find doctor
+            const doctor = await Doctor.findById(account_Id)
+
+            // find old active hour
+            const index = doctor.active_hours.findIndex(time_frame =>
+                time_frame.day === day &&
+                time_frame.start_time === start_time &&
+                time_frame.end_time === end_time &&
+                time_frame.hour_type === hour_type
+            )
+
+            //delete
+            doctor.active_hours.splice(index, 1)
+            await doctor.save()
+
+            res.status(200).json({message: 'Item deleted succesfully', 
+                active_hours: doctor.active_hours})
 
         }catch(error){
             console.log(error.message)
