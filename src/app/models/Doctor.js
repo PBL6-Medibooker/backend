@@ -43,6 +43,8 @@ const Doctor_Schema = new Schema({
     }
 })
 
+Doctor_Schema.path('active_hours').default(() => [])
+
 Doctor_Schema.statics.add_Doctor = async function(email, password, username, phone, proof) {
     //validation
     if(!email || !password){
