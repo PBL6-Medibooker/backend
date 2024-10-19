@@ -94,9 +94,11 @@ User.statics.login = async function(email, password){
 // change password
 User.statics.change_pass = async function(email, password){
 
-    if(!validator.isStrongPassword(password)){
-        throw Error("Password not strong enough!")
-    }
+    const user = await this.findOne({email})
+
+    // if(!validator.isStrongPassword(password)){
+    //     throw Error("Password not strong enough!")
+    // }
 
     const match = await bcrypt.compare(password, user.password)
 
@@ -108,9 +110,9 @@ User.statics.change_pass = async function(email, password){
     const salt = await bcrypt.genSalt(10)
     const hass = await bcrypt.hash(password, salt)
 
-    const user = await this.findOneAndUpdate({email}, {password: hass})
+    const updated_user = await this.findOneAndUpdate({email}, {password: hass}, {new: true})
 
-    return user
+    return updated_user
 }
 
 module.exports = mongoose.model('User', User)

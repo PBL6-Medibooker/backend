@@ -145,10 +145,10 @@ class user_Controller{
     get_Account = async(req, res) =>{
         try{
             // get id
-            const email = req.params.id
+            const account_Id = req.params.id
 
-            let accounts = await User.findOne(email)
-
+            let accounts = await User.findOne({_id: account_Id})
+            
             if (accounts.profile_image) {
 
                 // convert buffer to png
@@ -296,7 +296,7 @@ class user_Controller{
             // const {email} = req.user
             const {email, new_password} = req.body
             const user = await User.change_pass(email, new_password)
-
+            
             console.log(user)
             res.status(200).json({email, user})
 
