@@ -1,5 +1,4 @@
 const Region = require('../models/Region')
-const { exists } = require('../models/User')
 
 class region_Controller{
     add_Region = async(req, res) =>{
@@ -10,7 +9,7 @@ class region_Controller{
             const exists_reg = await Region.findOne({name})
 
             if(exists_reg){
-                throw Error('Region already exits')
+                throw new Error('Region already exits')
             }
 
             // create

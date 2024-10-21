@@ -32,7 +32,7 @@ class speciality_Controller{
             const exists_spec = await Speciality.findOne(name)
 
             if(exists_spec){
-                throw Error('Speciality already exits')
+                throw new Error('Speciality already exits')
             }
 
             //create

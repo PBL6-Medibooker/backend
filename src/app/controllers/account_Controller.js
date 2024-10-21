@@ -324,12 +324,12 @@ class user_Controller{
             // update
             if(speciality){
                 const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
-                account.speciality_id = speciality_id.id
+                account.speciality_id = speciality_id._id
             }
 
             if(region){
                 const region_id = await Region.findOne({name: region}, {_id: 1})
-                account.region_id = region_id.id
+                account.region_id = region_id._id
             }
 
             if(bio){
@@ -354,7 +354,8 @@ class user_Controller{
             const account_Id = req.params.id
 
             // update
-            const account = await Doctor.findByIdAndUpdate(account_Id,
+            const account = await Doctor.findByIdAndUpdate(
+                account_Id,
                 {proof}, 
                 {new: true})
 
@@ -387,7 +388,7 @@ class user_Controller{
             const {day, start_time, end_time, hour_type} = req.body
 
             if(!day || !start_time || !end_time || !hour_type){
-                throw Error('Missing information')
+                throw new Error('Missing information')
             }
 
             // get id
@@ -399,7 +400,7 @@ class user_Controller{
             const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id)
             
             if(is_overlap){
-                throw Error('Overlapping time frame')
+                throw new Error('Overlapping time frame')
             }
 
             // add
@@ -419,10 +420,13 @@ class user_Controller{
 
     update_Doctor_Active_Hour = async(req, res) =>{
         try{
-            const {day, start_time, end_time, hour_type, old_day, old_start_time, old_end_time, old_hour_type} = req.body
+            const {
+                day, start_time, end_time, hour_type, 
+                old_day, old_start_time, old_end_time, old_hour_type
+            } = req.body
 
             if(!day || !start_time || !end_time || !hour_type){
-                throw Error('Missing information')
+                throw new Error('Missing information')
             }
 
             // get id
@@ -440,7 +444,7 @@ class user_Controller{
             const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time)
             
             if(is_overlap){
-                throw Error('Overlapping time frame')
+                throw new Error('Overlapping time frame')
             }
 
             // find doctor
@@ -473,7 +477,7 @@ class user_Controller{
             const {day, start_time, end_time, hour_type} = req.body
 
             if(!day || !start_time || !end_time || !hour_type){
-                throw Error('Missing information')
+                throw new Error('Missing information')
             }
 
             // get id
@@ -497,6 +501,31 @@ class user_Controller{
             res.status(200).json({message: 'Item deleted succesfully', 
                 active_hours: doctor.active_hours})
 
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    get_Filtered_Doctor_List = async(req, res) =>{
+        try{
+            const {speciality, region} = req.body
+
+            query = {}
+
+            if(speciality){
+                const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
+                query.speciality_id = speciality_id._id
+            }
+
+            if(region){
+                const region_id = await Region.findOne({name: region}, {_id: 1})
+                query.region_id = region_id._id
+            }
+
+            const doctors = await Doctor.find(query)
+
+            res.status(200).json(doctors)
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})

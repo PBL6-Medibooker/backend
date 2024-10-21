@@ -1,5 +1,3 @@
-const User = require('./User')
-
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
@@ -9,12 +7,17 @@ const Client = new Schema({
         ref: 'User', 
         required: true 
     },
-    insurance: { 
-        type: String 
-    }, 
+    insurance:[{ 
+        name: String,
+        number: String,
+        location: String,
+        exp_date: String
+    }], 
     is_deleted: { 
         type: Boolean, default: false 
     }
-})
+}, { timestamps: true })
+
+Client.path('insurance').default(() => [])
 
 module.exports = mongoose.model('Client', Client)

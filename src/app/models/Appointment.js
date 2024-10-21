@@ -15,15 +15,24 @@ const Appointment = Schema({
         ref: 'Doctor', 
         required: true 
     },
-    appointment_date: { 
-        type: Date, 
+    appointment_day: { 
+        type: String, 
+        required: true 
+    },
+    appointment_time_start: { 
+        type: String, 
+        required: true 
+    },
+    appointment_time_end: { 
+        type: String, 
         required: true 
     },
     health_issue: { 
         type: String 
     },
     type_service: { 
-        type: String 
+        type: String,
+        default: null
     },
     is_deleted: { 
         type: Boolean, 

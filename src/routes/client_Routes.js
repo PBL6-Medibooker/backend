@@ -1,0 +1,16 @@
+const client_Controller = require("../app/controllers/client_Controller");
+
+const express = require('express')
+const router = express.Router()
+
+router.post('/add-client', client_Controller.add_Client)
+router.post('/update-insurance', client_Controller.update_Insurance)
+router.get('/get-all-client', client_Controller.get_All_Client)
+router.get('/get-client-by-userid/:id', client_Controller.get_Client_By_User_Id)
+router.post('/soft-delete-client/:id', client_Controller.soft_Delete_Client)
+router.post('/restore-client/:id', client_Controller.restore_Client)
+router.post('perma-delete-client/:id', client_Controller.perma_Delete_Client)
+router.get('/get-client-appointment/:id', client_Controller.get_Client_Appointment)
+router.get('/get-client-insr/:id', client_Controller.get_Client_Insurance)
+
+module.exports = router

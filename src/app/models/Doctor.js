@@ -48,26 +48,26 @@ Doctor_Schema.path('active_hours').default(() => [])
 Doctor_Schema.statics.add_Doctor = async function(email, password, username, phone, proof) {
     //validation
     if(!email || !password){
-        throw Error('Email and password is required!')
+        throw new Error('Email and password is required!')
     }
     
     if(!validator.isEmail(email)){
-        throw Error('Invalid email!')
+        throw new Error('Invalid email!')
     }
 
     if(!validator.isStrongPassword(password)){
-        throw Error('Password not strong enough!')
+        throw new Error('Password not strong enough!')
     }
 
     // if(!validator.isMobilePhone(phone, 'vi-VN')){
-    //     throw Error('Invalid phone number!')
+    //     throw new Error('Invalid phone number!')
     // }
 
     const doc_exists = await this.findOne({email})
     const user_exists = await User.findOne({email})
 
     if(user_exists || doc_exists){
-        throw Error('Email already in use!')
+        throw new Error('Email already in use!')
     }
     //hassing password
     const salt = await bcrypt.genSalt(10)

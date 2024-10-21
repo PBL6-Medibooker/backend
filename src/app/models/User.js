@@ -42,25 +42,25 @@ const User = new Schema({
 User.statics.add_User = async function(email, password, username, phone) {
     //validation
     if(!email || !password){
-        throw Error('Email and password is required!')
+        throw new Error('Email and password is required!')
     }
     
     if(!validator.isEmail(email)){
-        throw Error('Invalid email!')
+        throw new Error('Invalid email!')
     }
 
     if(!validator.isStrongPassword(password)){
-        throw Error('Password not strong enough!')
+        throw new Error('Password not strong enough!')
     }
 
     // if(!validator.isMobilePhone(phone, 'vi-VN')){
-    //     throw Error('Invalid phone number!')
+    //     throw new Error('Invalid phone number!')
     // }
 
     const exists = await this.findOne({email})
 
     if(exists){
-        throw Error('Email already in use!')
+        throw new Error('Email already in use!')
     }
     //hassing password
     const salt = await bcrypt.genSalt(10)
@@ -74,19 +74,19 @@ User.statics.add_User = async function(email, password, username, phone) {
 User.statics.login = async function(email, password){
     //validation
     if(!email || !password){
-        throw Error('No empty field!')
+        throw new Error('No empty field!')
     }
 
     const user = await this.findOne({email})
 
     if(!user){
-        throw Error('No user found')
+        throw new Error('No user found')
     }
 
     const match = await bcrypt.compare(password, user.password)
 
     if(!match){
-        throw Error('Invalid login')
+        throw new Error('Invalid login')
     }
 
     return user
@@ -97,13 +97,13 @@ User.statics.change_pass = async function(email, password){
     const user = await this.findOne({email})
 
     // if(!validator.isStrongPassword(password)){
-    //     throw Error("Password not strong enough!")
+    //     throw new Error("Password not strong enough!")
     // }
 
     const match = await bcrypt.compare(password, user.password)
 
     if(match){
-        throw Error('New password must be different from the old one')
+        throw new Error('New password must be different from the old one')
     }
 
     //hassing password
