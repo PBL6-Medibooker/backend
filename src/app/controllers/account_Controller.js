@@ -511,7 +511,7 @@ class user_Controller{
         try{
             const {speciality, region} = req.body
 
-            query = {}
+            let query = {}
 
             if(speciality){
                 const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
