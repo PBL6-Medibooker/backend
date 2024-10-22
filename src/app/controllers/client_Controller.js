@@ -21,20 +21,57 @@ class client_Controller {
         }
     }
 
+    add_Insurance = async(req, res) =>{
+        try{
+            const client_id = req.params.id
+            const {name, number, location, exp_date} = req.body
+
+            const new_Insurance = {name, number, location, exp_date}
+
+            const client = await Client.findByIdAndUpdate(
+                client_id,
+                {$push: {insurance: new_Insurance}},
+                {new: true}
+            )
+
+            res.status(201).json(client.insurance)
+
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    delete_Insurance = async(req, res) =>{
+        try{
+            const {client_id, insurance_id} = req.body
+
+            const client = await Client.findById(client_id)
+
+            client.insurance.pull({_id: insurance_id})
+
+            await client.save()
+            
+            res.status(201).json(client.insurance)
+
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+
     update_Insurance = async(req, res) =>{
         try {
             const {client_id, insurance_id, name, number, location, exp_date} = req.body
 
-            const client = await Client.findByIdAndUpdate(
-                {_id: client_id, 'insurance._id': insurance_id}, 
-                {$set: {
-                    'insurance.$.name': name,
-                    'insurance.$.number': number,
-                    'insurance.$.location': location,
-                    'insurance.$.exp_date': exp_date
-                }}, 
-                {new: true}
-            )
+            const client = await Client.findById(client_id)
+
+            const insurance = await client.insurance.id(insurance_id)
+
+            insurance.name = name
+            insurance.number = number
+            insurance.location = location
+            insurance.exp_date = exp_date
+
+            await client.save()
             
             res.status(200).json(client)
         }catch(error){
@@ -45,7 +82,7 @@ class client_Controller {
     get_All_Client = async(req, res) =>{
         try{
             const {is_deleted} = req.body
-            const query = {}
+            let query = {}
 
             if(is_deleted !== undefined){
                 query.is_deleted = is_deleted
@@ -64,7 +101,7 @@ class client_Controller {
             const {is_deleted} = req.body
             const user_id = req.params.id
 
-            const query = {user_id}
+            let query = {user_id}
 
             if(is_deleted !== undefined){
                 query.is_deleted = is_deleted

@@ -4,6 +4,8 @@ const express = require('express')
 const router = express.Router()
 
 router.post('/add-client', client_Controller.add_Client)
+router.post('/add-insurance/:id', client_Controller.add_Insurance)
+router.post('/del-insurance', client_Controller.delete_Insurance)
 router.post('/update-insurance', client_Controller.update_Insurance)
 router.get('/get-all-client', client_Controller.get_All_Client)
 router.get('/get-client-by-userid/:id', client_Controller.get_Client_By_User_Id)
