@@ -17,7 +17,10 @@ const Post = new Schema({
         type: String, 
         required: true },
     post_comments: [{ 
-        type: String 
+        comment_content: String,
+        reply_to: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+        // like: {type: Number, default: 0},
+        // dislike: {type: Number, default: 0}
     }],
     date_created: { 
         type: Date, 

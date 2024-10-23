@@ -145,9 +145,9 @@ class user_Controller{
     get_Account = async(req, res) =>{
         try{
             // get id
-            const account_Id = req.params.id
+            const {email}= req.body
 
-            let accounts = await User.findOne({_id: account_Id})
+            let accounts = await User.findOne({email})
             
             if (accounts.profile_image) {
 
