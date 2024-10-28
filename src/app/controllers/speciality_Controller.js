@@ -91,7 +91,7 @@ class speciality_Controller{
             const speciality_Id = req.params.id
 
             // find speciality
-            let speciality = await Speciality.findById(speciality_Id);
+            let speciality = await Speciality.findById(speciality_Id)
 
             if (!speciality) {
                 return res.status(404).json({error: 'Speciality not found'})
