@@ -35,7 +35,7 @@ class article_Controller{
             const {email} = req.body
             const doctor = await Doctor.findOne({email}, {_id: 1})
             
-            const articles = await Article.find({doctor_id: doctor._id})
+            const articles = await Article.find({doctor_id: doctor._id}).populate('doctor_id', 'email')
 
             res.status(200).json(articles)
         }catch(error){
@@ -86,7 +86,7 @@ class article_Controller{
                 article_id,
                 {article_title, article_content},
                 {new: true}
-            )
+            ).populate('doctor_id', 'email')
 
             if (!article) {
                 return res.status(404).json({error: 'Article not found'})

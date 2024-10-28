@@ -9,6 +9,11 @@ const Post = new Schema({
         ref: 'User', 
         required: true 
     },
+    speciality_id: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Speciality', 
+        required: true 
+    },
     post_title: { 
         type: String, 
         required: true 
@@ -17,8 +22,15 @@ const Post = new Schema({
         type: String, 
         required: true },
     post_comments: [{ 
+        replier: {
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'User'
+        },
         comment_content: String,
-        reply_to: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+        reply_to: {
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'User'
+        },
         // like: {type: Number, default: 0},
         // dislike: {type: Number, default: 0}
     }],
@@ -31,5 +43,7 @@ const Post = new Schema({
         default: false 
     }
 })
+
+Post.path('post_comments').default(() => [])
 
 module.exports = mongoose.model('Post', Post)
