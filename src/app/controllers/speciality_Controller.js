@@ -29,7 +29,7 @@ class speciality_Controller{
             const {name, description} = req.body
             const speciality_image = req.file ? req.file.buffer : null
 
-            const exists_spec = await Speciality.findOne(name)
+            const exists_spec = await Speciality.findOne({name})
 
             if(exists_spec){
                 throw new Error('Speciality already exits')
