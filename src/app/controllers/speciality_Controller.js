@@ -57,21 +57,18 @@ class speciality_Controller{
                 specialities = await Speciality.find({is_deleted: false})
             }
             
-            // const specialities_With_Png_Images = await Promise.all(specialities.map(async (speciality) => {
-            //     if (speciality.speciality_image) {
-
-            //         // convert buffer to png
-            //         const png_Buffer = await sharp(speciality.speciality_image)
-            //             .png()
-            //             .toBuffer()
+            const specialities_With_Png_Images = specialities.map((speciality) => {
+                const specialityObject = speciality.toObject()
     
-            //         const base64_Image = png_Buffer.toString('base64')
-            //         speciality.speciality_image = `data:image/png;base64,${base64_Image}`
-            //     }
-            //     return speciality
-            // }))
-            // console.log(specialities_With_Png_Images)
-            res.status(200).json(specialities)
+                if (specialityObject.speciality_image && Buffer.isBuffer(specialityObject.speciality_image)) {
+                    // Convert buffer directly to base64 string
+                    specialityObject.speciality_image = `data:image/png;base64,${specialityObject.speciality_image.toString('base64')}`
+                }
+    
+                return specialityObject
+            })
+    
+            res.status(200).json(specialities_With_Png_Images)
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})

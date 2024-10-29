@@ -120,21 +120,18 @@ class user_Controller{
                 accounts = await Doctor.find(query)
             }
 
-            // const accounts_With_Png_Images = await Promise.all(accounts.map(async (accounts) => {
-            //     if (accounts.profile_image) {
+            const accounts_With_Png_Images = accounts.map((account) => {
+                const accountObject = account.toObject() // Convert Mongoose document to plain object
 
-            //         // convert buffer to png
-            //         const png_Buffer = await sharp(accounts.profile_image)
-            //             .png()
-            //             .toBuffer()
-    
-            //         const base64_Image = png_Buffer.toString('base64')
-            //         accounts.profile_image = `data:image/png;base64,${base64_Image}`
-            //     }
-            //     return accounts
-            // }))
+                if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+                    // Convert buffer to base64 string
+                    accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+                }
+
+                return accountObject
+            })
             
-            res.status(200).json(accounts)
+            res.status(200).json(accounts_With_Png_Images)
 
         }catch(error){
             console.log(error.message)
@@ -147,20 +144,16 @@ class user_Controller{
             // get id
             const {email}= req.body
 
-            let accounts = await User.findOne({email})
+            let account = await User.findOne({email})
             
-            // if (accounts.profile_image) {
+            const accountObject = account.toObject();
 
-            //     // convert buffer to png
-            //     const png_Buffer = await sharp(accounts.profile_image)
-            //         .png()
-            //         .toBuffer()
+            // Convert profile image buffer to base64 if it exists
+            if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+                accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            }
 
-            //     const base64_Image = png_Buffer.toString('base64')
-            //     accounts.profile_image = `data:image/png;base64,${base64_Image}`
-            // }
-
-            res.status(200).json(accounts)
+            res.status(200).json(accountObject)
 
         }catch(error){
             console.log(error.message)
