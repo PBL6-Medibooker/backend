@@ -120,7 +120,7 @@ class user_Controller{
                 accounts = await Doctor.find(query)
             }
 
-            const accounts_With_Png_Images = await Promise.all(accounts.map(async (accounts) => {
+            const accounts_With_Png_Images = accounts.map((account) => {
                 const accountObject = account.toObject() // Convert Mongoose document to plain object
 
                 if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
@@ -129,7 +129,7 @@ class user_Controller{
                 }
 
                 return accountObject
-            }))
+            })
             
             res.status(200).json(accounts_With_Png_Images)
 
