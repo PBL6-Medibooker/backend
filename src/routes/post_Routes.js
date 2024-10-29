@@ -12,5 +12,8 @@ router.post('/update-post/:id', post_Controller.update_Post)
 router.post('/soft-del-post/:id', post_Controller.soft_Delete_Post)
 router.post('/restore-post/:id', post_Controller.restore_Post)
 router.post('/perma-del-post/:id', post_Controller.perma_Delete_Post)
+router.post('/add-comment/:id', post_Controller.add_Comment)
+router.post('/:post_id/comment/:comment_id/update', post_Controller.update_Comment)
+router.post('/:post_id/comment/:comment_id/del', post_Controller.del_Comment)
 
 module.exports = router

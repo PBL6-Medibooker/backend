@@ -27,22 +27,14 @@ const Post = new Schema({
             ref: 'User'
         },
         comment_content: String,
-        reply_to: {
-            type: mongoose.Schema.Types.ObjectId, 
-            ref: 'User'
-        },
         // like: {type: Number, default: 0},
         // dislike: {type: Number, default: 0}
     }],
-    date_created: { 
-        type: Date, 
-        default: Date.now 
-    },
     is_deleted: { 
         type: Boolean, 
         default: false 
     }
-})
+}, { timestamps: true })
 
 Post.path('post_comments').default(() => [])
 

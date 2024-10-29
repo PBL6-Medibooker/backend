@@ -97,7 +97,7 @@ class post_Controller{
 
             const query = {post_title, post_content}
 
-            const speciality = await Speciality.findOne({name: speciality_name})
+            const speciality = await Speciality.findOne({name: speciality_name}, {_id: 1})
 
             if(speciality){
                 query.speciality_id = speciality._id
@@ -187,7 +187,24 @@ class post_Controller{
 
     add_Comment = async(req, res) =>{
         try{
+            const post_id = req.params.id
+            const{comment_email, comment_content} = req.body
             
+            if(!comment_content){
+                throw Error('No content')
+            }
+
+            const replier = await User.findOne({email: comment_email}, {_id: 1})
+
+            const new_comment = {replier: replier._id, comment_content}
+
+            const post = await Post.findByIdAndUpdate(
+                post_id,
+                {$push: {post_comments: new_comment}},
+                {new: true}
+            )
+
+            res.status(201).json(post)
 
         }catch(error){
             res.status(400).json({error: error.message})
@@ -196,7 +213,28 @@ class post_Controller{
 
     update_Comment = async(req, res) =>{
         try{
-            
+            const {post_id, comment_id} = req.params
+            const{comment_content} = req.body
+
+            if(!comment_content){
+                throw Error('No content')
+            }
+
+            const post = await Post.findById(post_id)
+
+            if (!post) {
+                return res.status(404).json({ error: 'Post not found' })
+            }
+
+            const comment = await post.post_comments.id(comment_id)
+
+            if (!comment) {
+                return res.status(404).json({ error: 'Comment not found' })
+            }
+
+            comment.comment_content = comment_content
+
+            await post.save()
 
         }catch(error){
             res.status(400).json({error: error.message})
@@ -205,8 +243,23 @@ class post_Controller{
 
     del_Comment = async(req, res) =>{
         try{
-            
+            const {post_id, comment_id} = req.params
 
+            const post = await Post.findById(post_id)
+
+            if (!post) {
+                return res.status(404).json({ error: 'Post not found' })
+            }
+
+            post.post_comments.pull({_id: comment_id})
+
+            await post.save()
+
+            res.status(200).json({
+                message: 'Comment deleted successfully',
+                post
+            })
+            
         }catch(error){
             res.status(400).json({error: error.message})
         }
