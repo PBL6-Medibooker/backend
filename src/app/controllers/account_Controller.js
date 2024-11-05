@@ -524,6 +524,40 @@ class user_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    change_Doctor_Verified_Status = async(req, res) =>{
+        try{
+            const {email, verified} = req.body
+
+            const doctor = await Doctor.findOneAndUpdate(
+                {email}, 
+                {verified},
+                {new: true}
+            )
+
+            res.status(200).json(doctor)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    change_Account_Role = async(req, res) =>{
+        try{
+            const {email, role} = req.body
+
+            const account = await User.findOneAndUpdate(
+                {email}, 
+                {role},
+                {new: true}
+            )
+
+            res.status(200).json(account)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
     
 }
 

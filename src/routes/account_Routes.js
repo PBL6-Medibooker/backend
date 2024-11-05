@@ -20,6 +20,8 @@ router.post('/add-active-hour/:id', account_Controller.add_Doctor_Active_Hour)
 router.post('/update-active-hour/:id', account_Controller.update_Doctor_Active_Hour)
 router.post('/delete-active-hour/:id', account_Controller.delete_Doctor_Active_Hour)
 router.post('/filter-doctor-list', account_Controller.get_Filtered_Doctor_List)
+router.post('/change-doc-verified-status', account_Controller.change_Doctor_Verified_Status)
+router.post('/change-acc-role', account_Controller.change_Account_Role)
 
 module.exports = router
 
