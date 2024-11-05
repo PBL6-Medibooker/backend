@@ -139,12 +139,34 @@ class user_Controller{
         }
     }
 
-    get_Account = async(req, res) =>{
+    get_Account_By_Mail = async(req, res) =>{
         try{
             // get id
             const {email}= req.body
 
             let account = await User.findOne({email})
+            
+            const accountObject = account.toObject();
+
+            // Convert profile image buffer to base64 if it exists
+            if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+                accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            }
+
+            res.status(200).json(accountObject)
+
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    get_Account_By_Id = async(req, res) =>{
+        try{
+            // get id
+            const account_Id = req.params.id
+
+            let account = await User.findById(account_Id)
             
             const accountObject = account.toObject();
 
