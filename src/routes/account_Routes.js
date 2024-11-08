@@ -23,6 +23,8 @@ router.post('/delete-active-hour/:id', account_Controller.delete_Doctor_Active_H
 router.post('/filter-doctor-list', account_Controller.get_Filtered_Doctor_List)
 router.post('/change-doc-verified-status', account_Controller.change_Doctor_Verified_Status)
 router.post('/change-acc-role', account_Controller.change_Account_Role)
+router.post('/forgot-pass', account_Controller.forgot_password)
+router.get('/reset-password/:token', account_Controller.reset_password)
 
 module.exports = router
 

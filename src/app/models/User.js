@@ -32,6 +32,14 @@ const User = new Schema({
         type: String,
         default: 'none' 
     },
+    date_of_birth: {
+        type: Date,
+        default: Date.now 
+    },
+    address: {
+        type: String,
+        default: 'none' 
+    },
     is_deleted: {
         type: Boolean,
         default: false
@@ -92,7 +100,7 @@ User.statics.login = async function(email, password){
     return user
 }
 // change password
-User.statics.change_pass = async function(email, password){
+User.statics.change_pass = async function(email, password, is_reset = false){
 
     const user = await this.findOne({email})
 
@@ -100,7 +108,11 @@ User.statics.change_pass = async function(email, password){
     //     throw new Error("Password not strong enough!")
     // }
 
-    const match = await bcrypt.compare(password, user.password)
+    const match = false
+
+    if(!is_reset){
+        match = await bcrypt.compare(password, user.password)
+    }
 
     if(match){
         throw new Error('New password must be different from the old one')
