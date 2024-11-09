@@ -13,7 +13,7 @@ router.post('/update-insurance', appointment_Controller.update_Insurance)
 router.post('/get-all-appointment', appointment_Controller.get_All_Appointment)
 router.post('/get-appointment-by-userid/:id', appointment_Controller.get_Appointment_By_User_Id)
 router.get('/get-appointment-insr/:id', appointment_Controller.get_Appointment_Insurance)
-router.post('/soft-delete-client/:id', appointment_Controller.soft_Delete_Appointment)
+router.post('/soft-delete-appointment/:id', appointment_Controller.soft_Delete_Appointment)
 router.post('/restore-appointment/:id', appointment_Controller.restore_Appointment)
 
 module.exports = router
