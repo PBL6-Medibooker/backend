@@ -196,6 +196,39 @@ class appointment_Controller {
             res.status(400).json({error: error.message})
         }
     }
+
+    soft_Delete_Appointment = async(req, res) =>{
+        try{
+            const appointment_id = req.params.id
+
+            const appointment = await Appointment.findByIdAndUpdate(
+                appointment_id,
+                {is_deleted: true},
+                {new: true}
+            )
+
+            res.status(200).json(appointment)
+
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    restore_Appointment = async(req, res) =>{
+        try{
+            const appointment_id = req.params.id
+
+            const appointment = await Appointment.findByIdAndUpdate(
+                appointment_id,
+                {is_deleted: false},
+                {new: true}
+            )
+
+            res.status(200).json(appointment)
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
 }
 
 module.exports = new appointment_Controller
