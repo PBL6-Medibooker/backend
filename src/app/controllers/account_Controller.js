@@ -50,6 +50,11 @@ class user_Controller{
             let acc
             acc = await User.login(email, password)
 
+            // Kiểm tra đã xóa mềm hay chưa, nếu rồi thì ko cho đăng nhập
+            if (acc.is_deleted) {
+                return res.status(401).json({ error: "Tài khoản đã bị xóa." });
+            }
+
             const token = this.create_Token(acc._id)
             const role = acc.role
             
@@ -164,21 +169,29 @@ class user_Controller{
     update_Acc_Info = async(req, res) =>{
         try{
             // wait for file upload
+            console.log("Uploading image...");
             await upload_Promise_img(req, res)
 
+            console.log("Request body:", req.body);
+            console.log("Uploaded file:", req.file);
+            
             // get info from body
             const {username, phone, underlying_condition} = req.body
             const profile_image = req.file ? req.file.buffer : null
 
             // get id
             const account_Id = req.params.id
+            console.log("Account ID:", account_Id);
 
             // find account
             let account = await User.findById(account_Id)
 
+            
             if(!account){
+                console.error("Account not found");
                 return res.status(404).json({error: 'Account not found'})
             }
+            console.log("Current account details:", account);
 
             // update
             if(username){
@@ -192,14 +205,16 @@ class user_Controller{
             }
             if(profile_image){
                 account.profile_image = profile_image
+                console.log("Profile image updated.");
             }
 
             await account.save()
+            console.log("Account updated successfully:", account);
 
             res.status(200).json(account)
 
         }catch(error){
-            console.log(error.message)
+            console.error("Error updating account:", error);
             res.status(400).json({error: error.message})
         }
     }

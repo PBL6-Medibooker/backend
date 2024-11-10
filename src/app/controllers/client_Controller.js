@@ -14,7 +14,7 @@ class client_Controller {
                     exp_date: insurance_exp_date
                 }]
             })
-
+S
             res.status(201).json(client)
         }catch(error){
             res.status(400).json({error: error.message})
