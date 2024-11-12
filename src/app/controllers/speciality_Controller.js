@@ -45,9 +45,9 @@ class speciality_Controller{
             if(!speciality_image){
                 speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
             }else if(speciality_image){
-                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+                const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
-                const image_name =  `${speciality._id}.jpg`
+                const image_name =  `${speciality._id}.${file_Extension}`
 
                 const images_Dir = path.join(__dirname, '../../../image/speciality-logos')
                 const image_Path = path.join(images_Dir, image_name)
@@ -64,7 +64,7 @@ class speciality_Controller{
 
                 speciality.speciality_image = speciality_image_path
 
-                await speciality.save()
+                speciality.save()
             }
 
             res.status(201).json(speciality)
@@ -134,13 +134,12 @@ class speciality_Controller{
             if(description){
                 speciality.description = description
             }
-
             if(!speciality_image){
                 speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
             }else if(speciality_image){
-                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+                const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
-                const image_name =  `${speciality._id}.jpg`
+                const image_name =  `${speciality._id}.${file_Extension}`
 
                 const images_Dir = path.join(__dirname, '../../../image/speciality-logos')
                 const image_Path = path.join(images_Dir, image_name)
@@ -156,7 +155,6 @@ class speciality_Controller{
                 const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
 
                 speciality.speciality_image = speciality_image_path
-
             }
 
             await speciality.save()
