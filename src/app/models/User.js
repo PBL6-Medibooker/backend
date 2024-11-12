@@ -1,118 +1,124 @@
-const bcrypt = require('bcrypt')
-const validator = require('validator')
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const bcrypt = require("bcrypt");
+const validator = require("validator");
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-const User = new Schema({
+const User = new Schema(
+  {
     email: {
-        type: String,
-        unique: true,
-        required: true
+      type: String,
+      unique: true,
+      required: true,
     },
     password: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     username: {
-        type: String
+      type: String,
     },
     phone: {
-        type: String
+      type: String,
     },
     role: {
-        type: String,
-        required: true,
-        default: 'user'
+      type: String,
+      required: true,
+      default: "user",
     },
-    profile_image: { 
-        type: Buffer,
-        default: null
+    profile_image: {
+      type: Buffer,
+      default: null,
     },
     underlying_condition: {
-        type: String,
-        default: 'none' 
+      type: String,
+      default: "none",
     },
     is_deleted: {
-        type: Boolean,
-        default: false
-    }
-}, { timestamps: true })
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
 
 // sign up
-User.statics.add_User = async function(email, password, username, phone) {
-    //validation
-    if(!email || !password){
-        throw new Error('Email and password is required!')
-    }
-    
-    if(!validator.isEmail(email)){
-        throw new Error('Invalid email!')
-    }
+User.statics.add_User = async function (email, password, username, phone) {
+  //validation
+  if (!email || !password) {
+    throw new Error("Email and password is required!");
+  }
 
-    if(!validator.isStrongPassword(password)){
-        throw new Error('Password not strong enough!')
-    }
+  if (!validator.isEmail(email)) {
+    throw new Error("Invalid email!");
+  }
 
-    // if(!validator.isMobilePhone(phone, 'vi-VN')){
-    //     throw new Error('Invalid phone number!')
-    // }
+  if (!validator.isStrongPassword(password)) {
+    throw new Error("Password not strong enough!");
+  }
 
-    const exists = await this.findOne({email})
+  // if(!validator.isMobilePhone(phone, 'vi-VN')){
+  //     throw new Error('Invalid phone number!')
+  // }
 
-    if(exists){
-        throw new Error('Email already in use!')
-    }
-    //hassing password
-    const salt = await bcrypt.genSalt(10)
-    const hass = await bcrypt.hash(password, salt)
+  const exists = await this.findOne({ email });
 
-    const user = await this.create({email, password: hass, username, phone})
+  if (exists) {
+    throw new Error("Email already in use!");
+  }
+  //hassing password
+  const salt = await bcrypt.genSalt(10);
+  const hass = await bcrypt.hash(password, salt);
 
-    return user
-}
+  const user = await this.create({ email, password: hass, username, phone });
+
+  return user;
+};
 // login method
-User.statics.login = async function(email, password){
-    //validation
-    if(!email || !password){
-        throw new Error('No empty field!')
-    }
+User.statics.login = async function (email, password) {
+  //validation
+  if (!email || !password) {
+    throw new Error("No empty field!");
+  }
 
-    const user = await this.findOne({email})
+  const user = await this.findOne({ email });
 
-    if(!user){
-        throw new Error('No user found')
-    }
+  if (!user) {
+    throw new Error("No user found");
+  }
 
-    const match = await bcrypt.compare(password, user.password)
+  const match = await bcrypt.compare(password, user.password);
 
-    if(!match){
-        throw new Error('Invalid login')
-    }
+  if (!match) {
+    throw new Error("Invalid login");
+  }
 
-    return user
-}
+  return user;
+};
 // change password
-User.statics.change_pass = async function(email, password){
+User.statics.change_pass = async function (email, password) {
+  const user = await this.findOne({ email });
 
-    const user = await this.findOne({email})
+  // if(!validator.isStrongPassword(password)){
+  //     throw new Error("Password not strong enough!")
+  // }
 
-    // if(!validator.isStrongPassword(password)){
-    //     throw new Error("Password not strong enough!")
-    // }
+  const match = await bcrypt.compare(password, user.password);
 
-    const match = await bcrypt.compare(password, user.password)
+  if (match) {
+    throw new Error("New password must be different from the old one");
+  }
 
-    if(match){
-        throw new Error('New password must be different from the old one')
-    }
+  //hassing password
+  const salt = await bcrypt.genSalt(10);
+  const hass = await bcrypt.hash(password, salt);
 
-    //hassing password
-    const salt = await bcrypt.genSalt(10)
-    const hass = await bcrypt.hash(password, salt)
+  const updated_user = await this.findOneAndUpdate(
+    { email },
+    { password: hass },
+    { new: true }
+  );
 
-    const updated_user = await this.findOneAndUpdate({email}, {password: hass}, {new: true})
+  return updated_user;
+};
 
-    return updated_user
-}
-
-module.exports = mongoose.model('User', User)
+module.exports = mongoose.model("User", User);
