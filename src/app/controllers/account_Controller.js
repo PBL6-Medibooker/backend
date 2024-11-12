@@ -228,9 +228,9 @@ class user_Controller{
                 account.profile_image = default_profile_img
             }else if(profile_image){ // if image
 
-                const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
-                const image_name =  `${account_Id}.${file_Extension}`
+                const image_name =  `${account_Id}.jpg`
 
                 const images_Dir = path.join(__dirname, '../../../image/account-profile')
                 const image_Path = path.join(images_Dir, image_name)
@@ -238,12 +238,6 @@ class user_Controller{
                 // check if directory exits
                 if (!fs.existsSync(images_Dir)) {
                     fs.mkdirSync(images_Dir, {recursive: true})
-                }
-
-                // check if exits image with similar name
-                if (fs.existsSync(image_Path)) {
-                    // delete the existing image
-                    fs.unlinkSync(image_Path)
                 }
 
                 // save image
