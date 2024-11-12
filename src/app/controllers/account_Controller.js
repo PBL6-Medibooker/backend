@@ -30,10 +30,10 @@ const upload_pdf = multer({
 const upload_img = multer({
     storage: storage,
     fileFilter: (res, file, cb) =>{
-        if(file.mimetype.startsWith('image/')){
+        if(file.mimetype === 'image/jpeg'){
             cb(null, true)
         }else{
-            cb(new Error('Only image files are allowed'))
+            cb(new Error('Only JPG image files are allowed'))
         }
     }
 }).single('profile_image')
@@ -253,8 +253,7 @@ class user_Controller{
 
                 account.profile_image = profile_image_path
             }
-
-
+            
             await account.save()
 
             res.status(200).json(account)
@@ -457,6 +456,10 @@ class user_Controller{
             }
 
             await account.save()
+
+            account = await Doctor.findById(account_Id)
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
             
             res.status(200).json(account)
         }catch(error){
@@ -686,6 +689,20 @@ class user_Controller{
         }
     }
     
+    search_Doctor_By_Name = async(req, res) =>{
+        try {
+            const {name} = req.body
+    
+            const doctors = await Doctor.find({
+                name: {$regex: name, $options: 'i'}
+            }).populate('speciality_id', 'name')
+            .populate('region_id', 'name')
+    
+            res.status(200).json(doctors)
+        } catch (error) {
+            res.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = new user_Controller
