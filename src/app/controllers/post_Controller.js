@@ -264,6 +264,34 @@ class post_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    // search post by title or content
+    search_Post_By_Title_and_Content = async(req, res) =>{
+        try{
+            const {search_query} = req.body
+
+            const query = {}
+            
+            if (search_query) {
+                // create a regular expression for case-insensitive search
+                const regex = {$regex: search_query, $options: 'i'}
+    
+                // Search in multiple fields: post title, and content
+                query.$or = [
+                    { post_title: regex },        // Search by post title
+                    { post_content: regex }       // Search by post content
+                ]
+            }
+
+            const posts = await Post.find(query)
+            .populate('user_id', 'email')
+            .populate('speciality_id', 'name')
+
+            res.status(200).json(posts)
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
 }
 
 module.exports = new post_Controller

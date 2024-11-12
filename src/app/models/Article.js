@@ -13,6 +13,10 @@ const Article = new Schema({
         type: String, 
         required: true 
     },
+    article_image: { 
+        type: String, 
+        required: true 
+    },
     article_content: { 
         type: String, 
         required: true 

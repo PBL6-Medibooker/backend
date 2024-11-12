@@ -13,10 +13,10 @@ const storage = multer.memoryStorage()
 const upload = multer({
   storage: storage,
   fileFilter: (res, file, cb) =>{
-    if(file.mimetype.startsWith('image/')){
+    if(file.mimetype === 'image/jpeg'){
       cb(null, true)
     }else{
-      cb(new Error('Only image files are allowed'))
+      cb(new Error('Only JPG image files are allowed'))
     }
   }
 }).single('speciality_image')
@@ -40,7 +40,7 @@ class speciality_Controller{
             }
 
             //create
-            const speciality = await Speciality.create({name, description})
+            let speciality = await Speciality.create({name, description})
 
             if(!speciality_image){
                 speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG

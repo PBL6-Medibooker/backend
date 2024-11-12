@@ -13,5 +13,6 @@ router.post('/update-article/:id', article_Controller.update_Article)
 router.post('/soft-del-article', article_Controller.soft_Delete_Article)
 router.post('/restore-article', article_Controller.restore_Article)
 router.post('/perma-del-article', article_Controller.soft_Delete_Article)
+router.post('/search-article', article_Controller.search_Article_By_Title_and_Content)
 
 module.exports = router

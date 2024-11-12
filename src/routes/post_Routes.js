@@ -16,5 +16,6 @@ router.post('/perma-del-post/:id', post_Controller.perma_Delete_Post)
 router.post('/add-comment/:id', post_Controller.add_Comment)
 router.post('/:post_id/comment/:comment_id/update', post_Controller.update_Comment)
 router.post('/:post_id/comment/:comment_id/del', post_Controller.del_Comment)
+router.post('/search-post', post_Controller.search_Post_By_Title_and_Content)
 
 module.exports = router
