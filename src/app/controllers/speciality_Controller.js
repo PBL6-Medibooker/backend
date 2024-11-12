@@ -245,6 +245,23 @@ class speciality_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    getSpecData = async (req, res) => {
+        try {
+          const speciality_Id = req.params.id;
+          if (!mongoose.Types.ObjectId.isValid(speciality_Id)) {
+            return res
+              .status(400)
+              .json({ success: false, message: "Invalid Speciality ID format" })
+          }
+          const specData = await Speciality.findById(speciality_Id)
+          res.json({ success: true, specData })
+        } catch (error) {
+          console.log(error)
+          res.json({ success: false, message: error.message })
+        }
+    }
+
 }
 
 module.exports = new speciality_Controller

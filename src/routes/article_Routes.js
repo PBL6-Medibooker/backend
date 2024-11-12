@@ -1,4 +1,5 @@
 const article_Controller = require('../app/controllers/article_Controller')
+const require_Auth = require('../middleware/require_Auth')
 
 const express = require('express')
 const router = express.Router()
