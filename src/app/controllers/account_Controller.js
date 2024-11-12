@@ -123,6 +123,8 @@ class user_Controller{
                 }
             
                 accounts = await Doctor.find(query)
+                .populate('speciality_id', 'name')
+                .populate('region_id', 'name')
             }
 
             // const accounts_With_Png_Images = accounts.map((account) => {
@@ -150,6 +152,8 @@ class user_Controller{
             const {email}= req.body
 
             let account = await User.findOne({email})
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
             
             // const accountObject = account.toObject()
 
@@ -172,6 +176,8 @@ class user_Controller{
             const account_Id = req.params.id
 
             let account = await User.findById(account_Id)
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
             
             // const accountObject = account.toObject()
 
