@@ -6,11 +6,14 @@ const Speciality = require('../models/Speciality')
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
-const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+const mime = require('mime-types')
 const nodemailer = require('nodemailer')
 
 require('dotenv').config()
 
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
 const storage = multer.memoryStorage()
 
 const upload_pdf = multer({
@@ -122,18 +125,18 @@ class user_Controller{
                 accounts = await Doctor.find(query)
             }
 
-            const accounts_With_Png_Images = accounts.map((account) => {
-                const accountObject = account.toObject() // Convert Mongoose document to plain object
+            // const accounts_With_Png_Images = accounts.map((account) => {
+            //     const accountObject = account.toObject() // Convert Mongoose document to plain object
 
-                if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-                    // Convert buffer to base64 string
-                    accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
-                }
+            //     if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+            //         // Convert buffer to base64 string
+            //         accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            //     }
 
-                return accountObject
-            })
+            //     return accountObject
+            // })
             
-            res.status(200).json(accounts_With_Png_Images)
+            res.status(200).json(accounts)
 
         }catch(error){
             console.log(error.message)
@@ -148,14 +151,14 @@ class user_Controller{
 
             let account = await User.findOne({email})
             
-            const accountObject = account.toObject();
+            // const accountObject = account.toObject()
 
-            // Convert profile image buffer to base64 if it exists
-            if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-                accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
-            }
+            // // Convert profile image buffer to base64 if it exists
+            // if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+            //     accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            // }
 
-            res.status(200).json(accountObject)
+            res.status(200).json(account)
 
         }catch(error){
             console.log(error.message)
@@ -170,14 +173,14 @@ class user_Controller{
 
             let account = await User.findById(account_Id)
             
-            const accountObject = account.toObject();
+            // const accountObject = account.toObject()
 
-            // Convert profile image buffer to base64 if it exists
-            if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-                accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
-            }
+            // // Convert profile image buffer to base64 if it exists
+            // if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+            //     accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            // }
 
-            res.status(200).json(accountObject)
+            res.status(200).json(account)
 
         }catch(error){
             console.log(error.message)
@@ -221,7 +224,29 @@ class user_Controller{
                 account.address = address
             }
 
-            account.profile_image = profile_image
+            if(!profile_image){ // if no image set as default 
+                account.profile_image = default_profile_img
+            }else if(profile_image){ // if image
+
+                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+
+                const image_name =  `${account_Id}.jpg`
+
+                const images_Dir = path.join(__dirname, '../../../image/account-profile')
+                const image_Path = path.join(images_Dir, image_name)
+
+                // check if directory exits
+                if (!fs.existsSync(images_Dir)) {
+                    fs.mkdirSync(images_Dir, {recursive: true})
+                }
+
+                // save image
+                fs.writeFileSync(image_Path, profile_image)
+
+                const profile_image_path = `${req.protocol}://${req.get('host')}/images/account-profile/${image_name}`
+
+                account.profile_image = profile_image_path
+            }
 
 
             await account.save()

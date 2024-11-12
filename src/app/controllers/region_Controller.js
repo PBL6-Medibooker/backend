@@ -50,6 +50,15 @@ class region_Controller{
             const region_Id = req.params.id
 
             // update
+            if (!name) {
+                throw new Error('Missing information')
+            }
+
+            const existing_Region = await Region.findOne({name, _id: {$ne: region_Id}})
+            if (existing_Region) {
+                throw new Error('Region already exits')
+            }
+                
             const region = await Region.findByIdAndUpdate(region_Id, 
                 {name}, 
                 {new: true})

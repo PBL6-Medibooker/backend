@@ -12,6 +12,10 @@ const validator = require('validator')
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
+require('dotenv').config()
+
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+
 const Doctor_Schema = new Schema({
     speciality_id: { 
         type: mongoose.Schema.Types.ObjectId, 
@@ -73,7 +77,13 @@ Doctor_Schema.statics.add_Doctor = async function(email, password, username, pho
     const salt = await bcrypt.genSalt(10)
     const hass = await bcrypt.hash(password, salt)
 
-    const doctor = await this.create({email, password: hass, username, phone, proof})
+    const doctor = await this.create({
+        email, 
+        password: hass, 
+        username, 
+        phone, 
+        proof, 
+        profile_image: default_profile_img})
 
     return doctor
 }

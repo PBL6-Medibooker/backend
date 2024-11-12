@@ -1,8 +1,12 @@
 const Speciality = require('../models/Speciality')
 
-const sharp = require('sharp')
+// const sharp = require('sharp')
 const multer = require('multer')
 const { promisify } = require('util')
+const fs = require('fs')
+const path = require('path')
+const mime = require('mime-types')
+require('dotenv').config()
 
 const storage = multer.memoryStorage()
 
@@ -36,7 +40,32 @@ class speciality_Controller{
             }
 
             //create
-            const speciality = await Speciality.create({name, description, speciality_image})
+            const speciality = await Speciality.create({name, description})
+
+            if(!speciality_image){
+                speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
+            }else if(speciality_image){
+                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+
+                const image_name =  `${speciality._id}.jpg`
+
+                const images_Dir = path.join(__dirname, '../../../image/speciality-logos')
+                const image_Path = path.join(images_Dir, image_name)
+
+                // check if directory exits
+                if (!fs.existsSync(images_Dir)) {
+                    fs.mkdirSync(images_Dir, {recursive: true})
+                }
+
+                // save image
+                fs.writeFileSync(image_Path, speciality_image)
+
+                const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
+
+                speciality.speciality_image = speciality_image_path
+
+                await speciality.save()
+            }
 
             res.status(201).json(speciality)
         }catch(error){
@@ -57,18 +86,18 @@ class speciality_Controller{
                 specialities = await Speciality.find({is_deleted: false})
             }
             
-            const specialities_With_Png_Images = specialities.map((speciality) => {
-                const specialityObject = speciality.toObject()
+            // const specialities_With_Png_Images = specialities.map((speciality) => {
+            //     const specialityObject = speciality.toObject()
     
-                if (specialityObject.speciality_image && Buffer.isBuffer(specialityObject.speciality_image)) {
-                    // Convert buffer directly to base64 string
-                    specialityObject.speciality_image = `data:image/png;base64,${specialityObject.speciality_image.toString('base64')}`
-                }
+            //     if (specialityObject.speciality_image && Buffer.isBuffer(specialityObject.speciality_image)) {
+            //         // Convert buffer directly to base64 string
+            //         specialityObject.speciality_image = `data:image/png;base64,${specialityObject.speciality_image.toString('base64')}`
+            //     }
     
-                return specialityObject
-            })
+            //     return specialityObject
+            // })
     
-            res.status(200).json(specialities_With_Png_Images)
+            res.status(200).json(specialities)
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})
@@ -95,14 +124,39 @@ class speciality_Controller{
             }
 
             // update
-            if(name){
+            if (name) {
+                const existingSpeciality = await Speciality.findOne({name, _id: {$ne: speciality_Id }})
+                if (existingSpeciality) {
+                    throw new Error('Speciality already exits')
+                }
                 speciality.name = name
             }
             if(description){
                 speciality.description = description
             }
-            if (speciality_image){
-                speciality.speciality_image = speciality_image
+
+            if(!speciality_image){
+                speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
+            }else if(speciality_image){
+                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+
+                const image_name =  `${speciality._id}.jpg`
+
+                const images_Dir = path.join(__dirname, '../../../image/speciality-logos')
+                const image_Path = path.join(images_Dir, image_name)
+
+                // check if directory exits
+                if (!fs.existsSync(images_Dir)) {
+                    fs.mkdirSync(images_Dir, {recursive: true})
+                }
+
+                // save image
+                fs.writeFileSync(image_Path, speciality_image)
+
+                const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
+
+                speciality.speciality_image = speciality_image_path
+
             }
 
             await speciality.save()
