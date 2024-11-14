@@ -1,6 +1,42 @@
 const Appointment = require('../models/Appointment')
+const Doctor = require('../models/Doctor')
 
 class appointment_Controller {
+
+    check_Appointment_time = async(doctor_id, appointment_day, appointment_time_start, appointment_time_end) =>{
+        const existing_appointments = await Appointment.find({
+            doctor_id,
+            appointment_day,
+            appointment_time_start,
+            appointment_time_end
+        })
+
+        const counter = existing_appointments.length
+        
+        const doctor = await Doctor.findById(doctor_id).select('active_hours')
+
+        if (!doctor) {
+            throw new Error('Doctor schedule not found')
+        }
+
+        const day_Of_Week = appointment_day.split(' ')[0]
+
+        const doctor_active_hour = doctor.active_hours.find(
+            (active_Hour) =>
+                active_Hour.day === day_Of_Week &&
+                active_Hour.start_time === appointment_time_start &&
+                active_Hour.end_time === appointment_time_end
+        )
+
+        if (!doctor_active_hour) {
+            throw new Error('Doctor is not available at this time')
+        }
+
+        if (counter >= doctor_active_hour.appointment_limit){
+            throw new Error('This schedule is fully booked')
+        }
+    }
+
     add_Appointment = async(req, res) =>{
         try{
             const {
@@ -20,6 +56,13 @@ class appointment_Controller {
             ){
                 throw new Error('Missing information')
             }
+
+            await this.check_Appointment_time(
+                doctor_id, 
+                appointment_day, 
+                appointment_time_start, 
+                appointment_time_end
+            )
 
             const appointment = await Appointment.create({
                 user_id,
@@ -58,19 +101,27 @@ class appointment_Controller {
     change_Appointment_Time = async(req, res) =>{
         try {
             const appointment_id = req.params.id
-            const {appointment_day, appointment_time_start, appointment_time_end} = req.body
+            const {doctor_id, appointment_day, appointment_time_start, appointment_time_end} = req.body
 
-            if (!appointment_time_start || !appointment_time_end || !appointment_day) {
+            if (!appointment_time_start || !appointment_time_end 
+                || !appointment_day || !doctor_id) {
                 throw new Error('Missing information')
             }
 
-            const updatedAppointment = await Appointment.findByIdAndUpdate(
+            await this.check_Appointment_time(
+                doctor_id, 
+                appointment_day, 
+                appointment_time_start, 
+                appointment_time_end
+            )
+
+            const appointment = await Appointment.findByIdAndUpdate(
                 appointment_id,
                 {appointment_time_start, appointment_time_end},
                 {new: true}
             )
 
-            res.status(200).json(updatedAppointment)
+            res.status(200).json(appointment)
 
         }catch(error){
             res.status(400).json({error: error.message})
@@ -176,7 +227,7 @@ class appointment_Controller {
                 query.is_deleted = is_deleted
             }
 
-            const appointment = await Appointment.findOne(query)
+            const appointment = await Appointment.find(query)
 
             res.status(200).json(appointment)
 
@@ -225,6 +276,26 @@ class appointment_Controller {
             )
 
             res.status(200).json(appointment)
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    get_Appointments_By_Doctor = async(req, res) =>{
+        try{
+            const {is_deleted} = req.body
+            const doctor_id = req.params.id
+
+            let query = {doctor_id}
+
+            if(is_deleted !== undefined){
+                query.is_deleted = is_deleted
+            }
+
+            const appointment = await Appointment.find(query)
+
+            res.status(200).json(appointment)
+
         }catch(error){
             res.status(400).json({error: error.message})
         }

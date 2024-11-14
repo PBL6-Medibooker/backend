@@ -2,6 +2,7 @@ const User = require('../models/User')
 const Doctor = require('../models/Doctor')
 const Region = require('../models/Region')
 const Speciality = require('../models/Speciality')
+const Appointment = require('../models/Appointment')
 
 const multer = require('multer')
 const { promisify } = require('util')
@@ -10,6 +11,7 @@ const fs = require('fs')
 const path = require('path')
 const mime = require('mime-types')
 const nodemailer = require('nodemailer')
+const mongoose = require('mongoose')
 
 require('dotenv').config()
 
@@ -498,7 +500,72 @@ class user_Controller{
             // find doctor
             const doctor = await Doctor.findById(account_Id)
 
-            res.status(201).json(doctor.active_hours)
+            // find doctor existing appointments
+            const appointments = await Appointment.aggregate([
+                {   // by the same doctor
+                    $match: {doctor_id: new mongoose.Types.ObjectId(account_Id)}
+                },
+                {
+                    // group up appointments with similar appointment date, start and end time as one
+                    // count the sum of similar appointments forming each group
+                    $group: {
+                        _id: {
+                            appointment_day: "$appointment_day",
+                            appointment_time_start: "$appointment_time_start",
+                            appointment_time_end: "$appointment_time_end"
+                        },
+                        count: {$sum: 1}
+                    }
+                }
+            ])
+
+            // time that are fully booked
+            let fully_Booked_Hour = []
+
+            // time that are not fully booked
+            let booked_Hour = []
+
+            // go through each appointment
+            doctor.active_hours.forEach((active_Hour) =>{
+                // go through each active hour
+                appointments.forEach((appointment) =>{
+                    // day format: Day-of-Week specific-date 
+                    const day_Of_Week = appointment._id.appointment_day.split(' ')[0]
+                    if (
+                        active_Hour.day === day_Of_Week &&
+                        active_Hour.start_time === appointment._id.appointment_time_start &&
+                        active_Hour.end_time === appointment._id.appointment_time_end &&
+                        appointment.count >= active_Hour.appointment_limit
+                    ){
+                        fully_Booked_Hour.push({
+                            date: appointment._id.appointment_day,
+                            start_time: active_Hour.start_time,
+                            end_time: active_Hour.end_time,
+                            appointment_count: appointment.count,
+                            appointment_limit: active_Hour.appointment_limit
+                        })
+                    } else if (
+                        active_Hour.day === day_Of_Week &&
+                        active_Hour.start_time === appointment._id.appointment_time_start &&
+                        active_Hour.end_time === appointment._id.appointment_time_end &&
+                        appointment.count < active_Hour.appointment_limit
+                    ){
+                        booked_Hour.push({
+                            date: appointment._id.appointment_day,
+                            start_time: active_Hour.start_time,
+                            end_time: active_Hour.end_time,
+                            appointment_count: appointment.count,
+                            appointment_limit: active_Hour.appointment_limit
+                        })
+                    }
+                })
+            })
+
+            res.status(201).json({
+                active_hours: doctor.active_hours,
+                booked: booked_Hour,
+                fully_booked: fully_Booked_Hour
+            })
 
         }catch(error){
             console.log(error.message)
@@ -508,9 +575,9 @@ class user_Controller{
 
     add_Doctor_Active_Hour = async(req, res) =>{
         try{
-            const {day, start_time, end_time, hour_type} = req.body
+            const {day, start_time, end_time, hour_type, appointment_limit} = req.body
 
-            if(!day || !start_time || !end_time || !hour_type){
+            if(!day || !start_time || !end_time || !hour_type || !appointment_limit){
                 throw new Error('Missing information')
             }
 
@@ -518,7 +585,7 @@ class user_Controller{
             const account_Id = req.params.id
 
             // check overlap
-            const new_Active_Hour = {day, start_time, end_time, hour_type}
+            const new_Active_Hour = {day, start_time, end_time, hour_type, appointment_limit}
 
             const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id)
             
@@ -544,7 +611,7 @@ class user_Controller{
     update_Doctor_Active_Hour = async(req, res) =>{
         try{
             const {
-                day, start_time, end_time, hour_type, 
+                day, start_time, end_time, hour_type, appointment_limit, 
                 old_day, old_start_time, old_end_time, old_hour_type
             } = req.body
 
@@ -562,7 +629,7 @@ class user_Controller{
                 end_time: old_end_time, 
                 hour_type: old_hour_type
             }
-            const new_Active_Hour = {day, start_time, end_time, hour_type}
+            const new_Active_Hour = {day, start_time, end_time, hour_type, appointment_limit}
 
             const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time)
             
@@ -647,6 +714,8 @@ class user_Controller{
             }
 
             const doctors = await Doctor.find(query)
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
 
             res.status(200).json(doctors)
         }catch(error){
@@ -663,7 +732,8 @@ class user_Controller{
                 {email}, 
                 {verified},
                 {new: true}
-            )
+            ).populate('speciality_id', 'name')
+            .populate('region_id', 'name')
 
             res.status(200).json(doctor)
         }catch(error){
@@ -680,7 +750,8 @@ class user_Controller{
                 {email}, 
                 {role},
                 {new: true}
-            )
+            ).populate('speciality_id', 'name')
+            .populate('region_id', 'name')
 
             res.status(200).json(account)
         }catch(error){

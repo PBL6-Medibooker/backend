@@ -16,5 +16,6 @@ router.post('/get-appointment-by-userid/:id', appointment_Controller.get_Appoint
 router.get('/get-appointment-insr/:id', appointment_Controller.get_Appointment_Insurance)
 router.post('/soft-delete-appointment/:id', appointment_Controller.soft_Delete_Appointment)
 router.post('/restore-appointment/:id', appointment_Controller.restore_Appointment)
+router.post('/get-appointment-by-doctor/:id', appointment_Controller.get_Appointments_By_Doctor)
 
 module.exports = router
