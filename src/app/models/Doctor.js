@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt')
 const validator = require('validator')
 
 const mongoose = require('mongoose')
+const Appointment = require('./Appointment')
 const Schema = mongoose.Schema
 
 require('dotenv').config()
@@ -30,7 +31,8 @@ const Doctor_Schema = new Schema({
         day: String, // days of week
         start_time: String, // hours:minutes
         end_time: String, // hours:minutes
-        hour_type: String // working or appointment
+        hour_type: String, // working or appointment
+        appointment_limit: Number // limit the number of appointments in the time frame
     }],
     bio: {
         type: String,
