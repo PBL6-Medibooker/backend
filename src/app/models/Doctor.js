@@ -1,142 +1,160 @@
-const User = require('./User')
-const Speciality = require('./Speciality')
-const Region = require('./Region')
+const User = require("./User");
+const Speciality = require("./Speciality");
+const Region = require("./Region");
 
-const Moment = require('moment')
-const MomentRange = require('moment-range')
-const moment = MomentRange.extendMoment(Moment)
+const Moment = require("moment");
+const MomentRange = require("moment-range");
+const moment = MomentRange.extendMoment(Moment);
 
-const bcrypt = require('bcrypt')
-const validator = require('validator')
+const bcrypt = require("bcrypt");
+const validator = require("validator");
 
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-require('dotenv').config()
+require("dotenv").config();
 
-const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG;
 
 const Doctor_Schema = new Schema({
-    speciality_id: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Speciality', 
-        required: false 
+  speciality_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Speciality",
+    required: false,
+  },
+  verified: {
+    type: Boolean,
+    default: false,
+  },
+  active_hours: [
+    {
+      day: String, // days of week
+      start_time: String, // hours:minutes
+      end_time: String, // hours:minutes
+      hour_type: String, // working or appointment
+      appointment_limit: Number,
     },
-    verified:{
-        type: Boolean,
-        default: false
-    },
-    active_hours: [{
-        day: String, // days of week
-        start_time: String, // hours:minutes
-        end_time: String, // hours:minutes
-        hour_type: String // working or appointment
-    }],
-    bio: {
-        type: String,
-        default: 'undisclosed'
-    },
-    region_id: {
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Region', 
-        required: false 
-    },
-    proof: {
-        type: Buffer,
-        required: false
-    }
-})
+  ],
+  bio: {
+    type: String,
+    default: "undisclosed",
+  },
+  region_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Region",
+    required: false,
+  },
+  proof: {
+    type: Buffer,
+    required: false,
+  },
+});
 
-Doctor_Schema.path('active_hours').default(() => [])
+Doctor_Schema.path("active_hours").default(() => []);
 
-Doctor_Schema.statics.add_Doctor = async function(email, password, username, phone, proof) {
-    //validation
-    if(!email || !password){
-        throw new Error('Email and password is required!')
-    }
-    
-    if(!validator.isEmail(email)){
-        throw new Error('Invalid email!')
-    }
+Doctor_Schema.statics.add_Doctor = async function (
+  email,
+  password,
+  username,
+  phone,
+  proof
+) {
+  //validation
+  if (!email || !password) {
+    throw new Error("Email and password is required!");
+  }
 
-    if(!validator.isStrongPassword(password)){
-        throw new Error('Password not strong enough!')
-    }
+  if (!validator.isEmail(email)) {
+    throw new Error("Invalid email!");
+  }
 
-    // if(!validator.isMobilePhone(phone, 'vi-VN')){
-    //     throw new Error('Invalid phone number!')
-    // }
+  if (!validator.isStrongPassword(password)) {
+    throw new Error("Password not strong enough!");
+  }
 
-    const doc_exists = await this.findOne({email})
-    const user_exists = await User.findOne({email})
+  // if(!validator.isMobilePhone(phone, 'vi-VN')){
+  //     throw new Error('Invalid phone number!')
+  // }
 
-    if(user_exists || doc_exists){
-        throw new Error('Email already in use!')
-    }
-    //hassing password
-    const salt = await bcrypt.genSalt(10)
-    const hass = await bcrypt.hash(password, salt)
+  const doc_exists = await this.findOne({ email });
+  const user_exists = await User.findOne({ email });
 
-    const doctor = await this.create({
-        email, 
-        password: hass, 
-        username, 
-        phone, 
-        proof, 
-        profile_image: default_profile_img})
+  if (user_exists || doc_exists) {
+    throw new Error("Email already in use!");
+  }
+  //hassing password
+  const salt = await bcrypt.genSalt(10);
+  const hass = await bcrypt.hash(password, salt);
 
-    return doctor
-}
+  const doctor = await this.create({
+    email,
+    password: hass,
+    username,
+    phone,
+    proof,
+    profile_image: default_profile_img,
+  });
 
-Doctor_Schema.statics.Is_Time_Overlap = async function(new_time, account_Id, excluded_time = {}) {
+  return doctor;
+};
 
-    const account_active_hours = await this.findById(account_Id, {active_hours: 1})
+Doctor_Schema.statics.Is_Time_Overlap = async function (
+  new_time,
+  account_Id,
+  excluded_time = {}
+) {
+  const account_active_hours = await this.findById(account_Id, {
+    active_hours: 1,
+  });
 
-    const existing_Times = account_active_hours?.active_hours || []
+  const existing_Times = account_active_hours?.active_hours || [];
 
-    if(!existing_Times || existing_Times.length === 0){ // no existing time frame
-        return false // no overlapping time frame
-    }
+  if (!existing_Times || existing_Times.length === 0) {
+    // no existing time frame
+    return false; // no overlapping time frame
+  }
 
-    const new_Start = new_time.start_time.split(':')
-    const new_End = new_time.end_time.split(':')
+  const new_Start = new_time.start_time.split(":");
+  const new_End = new_time.end_time.split(":");
 
-    const new_Range = moment.range(
-        moment().set({ hours: new_Start[0], minutes: new_Start[1] }),
-        moment().set({ hours: new_End[0], minutes: new_End[1] })
-    ) 
+  const new_Range = moment.range(
+    moment().set({ hours: new_Start[0], minutes: new_Start[1] }),
+    moment().set({ hours: new_End[0], minutes: new_End[1] })
+  );
 
-    for(let existing_Time of existing_Times){
-
-        if (existing_Time.day !== new_time.day || existing_Time.hour_type !== new_time.hour_type) {
-            continue // skip if different day or type
-        }
-
-        if(excluded_time.day === existing_Time.day 
-           && excluded_time.start_time === existing_Time.start_time 
-           && excluded_time.end_time === existing_Time.end_time
-           && excluded_time.hour_type === existing_Time.hour_type
-        ){
-            continue // skip a day for updating
-        }
-        
-        let existing_Start = existing_Time.start_time.split(':') // get hours and minutes
-        let existing_End = existing_Time.end_time.split(':') // get hours and minutes
-
-        let existing_Range = moment.range(
-            moment().set({hours: existing_Start[0], minutes: existing_Start[1]}),
-            moment().set({ hours: existing_End[0], minutes: existing_End[1] })
-        )
-
-        if(existing_Range.overlaps(new_Range)){
-            return true // time frames overlap
-        }
-        
+  for (let existing_Time of existing_Times) {
+    if (
+      existing_Time.day !== new_time.day ||
+      existing_Time.hour_type !== new_time.hour_type
+    ) {
+      continue; // skip if different day or type
     }
 
-    return false
-}
+    if (
+      excluded_time.day === existing_Time.day &&
+      excluded_time.start_time === existing_Time.start_time &&
+      excluded_time.end_time === existing_Time.end_time &&
+      excluded_time.hour_type === existing_Time.hour_type
+    ) {
+      continue; // skip a day for updating
+    }
 
-const Doctor = User.discriminator('Doctor', Doctor_Schema)
+    let existing_Start = existing_Time.start_time.split(":"); // get hours and minutes
+    let existing_End = existing_Time.end_time.split(":"); // get hours and minutes
 
-module.exports = Doctor
+    let existing_Range = moment.range(
+      moment().set({ hours: existing_Start[0], minutes: existing_Start[1] }),
+      moment().set({ hours: existing_End[0], minutes: existing_End[1] })
+    );
+
+    if (existing_Range.overlaps(new_Range)) {
+      return true; // time frames overlap
+    }
+  }
+
+  return false;
+};
+
+const Doctor = User.discriminator("Doctor", Doctor_Schema);
+
+module.exports = Doctor;
