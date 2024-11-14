@@ -6,6 +6,7 @@ const Speciality = require('../models/Speciality')
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const nodemailer = require('nodemailer')
 
@@ -99,6 +100,8 @@ class user_Controller{
 
         }catch(error){ //if user account
             console.log(error.message)
+
+
             res.status(400).json({error: error.message})
         }
     }
@@ -203,6 +206,15 @@ class user_Controller{
             // get info from body
             const {username, phone, underlying_condition, date_of_birth, address} = req.body
             const profile_image = req.file ? req.file.buffer : null
+
+            let parsedDateOfBirth = null;
+        if (date_of_birth) {
+            parsedDateOfBirth = new Date(date_of_birth);
+            // Ensure the date is valid
+            if (isNaN(parsedDateOfBirth)) {
+                return res.status(400).json({ error: 'Invalid date format for date_of_birth' });
+            }
+        }
 
             // get id
             const account_Id = req.params.id
@@ -371,6 +383,7 @@ class user_Controller{
         }
     }
 
+    
     reset_password = async(req, res) =>{
         try {
             const token = req.params.token
@@ -395,6 +408,8 @@ class user_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    
 
     change_password = async(req, res) =>{
         try{

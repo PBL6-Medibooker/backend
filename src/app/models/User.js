@@ -108,7 +108,7 @@ User.statics.change_pass = async function(email, password, is_reset = false){
     //     throw new Error("Password not strong enough!")
     // }
 
-    const match = false
+    let match = false
 
     if(!is_reset){
         match = await bcrypt.compare(password, user.password)
