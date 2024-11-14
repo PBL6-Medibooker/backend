@@ -2,16 +2,20 @@ const User = require('../models/User')
 const Doctor = require('../models/Doctor')
 const Region = require('../models/Region')
 const Speciality = require('../models/Speciality')
+const Appointment = require('../models/Appointment')
 
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
-const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+const mime = require('mime-types')
 const nodemailer = require('nodemailer')
+const mongoose = require('mongoose')
 
 require('dotenv').config()
 
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
 const storage = multer.memoryStorage()
 
 const upload_pdf = multer({
@@ -28,10 +32,10 @@ const upload_pdf = multer({
 const upload_img = multer({
     storage: storage,
     fileFilter: (res, file, cb) =>{
-        if(file.mimetype.startsWith('image/')){
+        if(file.mimetype === 'image/jpeg'){
             cb(null, true)
         }else{
-            cb(new Error('Only image files are allowed'))
+            cb(new Error('Only JPG image files are allowed'))
         }
     }
 }).single('profile_image')
@@ -52,11 +56,6 @@ class user_Controller{
         try{
             let acc
             acc = await User.login(email, password)
-
-            // Kiểm tra đã xóa mềm hay chưa, nếu rồi thì ko cho đăng nhập
-            if (acc.is_deleted) {
-                return res.status(401).json({ error: "Tài khoản đã bị xóa." });
-            }
 
             const token = this.create_Token(acc._id)
             const role = acc.role
@@ -100,8 +99,6 @@ class user_Controller{
 
         }catch(error){ //if user account
             console.log(error.message)
-
-
             res.status(400).json({error: error.message})
         }
     }
@@ -128,20 +125,22 @@ class user_Controller{
                 }
             
                 accounts = await Doctor.find(query)
+                .populate('speciality_id', 'name')
+                .populate('region_id', 'name')
             }
 
-            const accounts_With_Png_Images = accounts.map((account) => {
-                const accountObject = account.toObject() // Convert Mongoose document to plain object
+            // const accounts_With_Png_Images = accounts.map((account) => {
+            //     const accountObject = account.toObject() // Convert Mongoose document to plain object
 
-                if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-                    // Convert buffer to base64 string
-                    accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
-                }
+            //     if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+            //         // Convert buffer to base64 string
+            //         accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            //     }
 
-                return accountObject
-            })
+            //     return accountObject
+            // })
             
-            res.status(200).json(accounts_With_Png_Images)
+            res.status(200).json(accounts)
 
         }catch(error){
             console.log(error.message)
@@ -155,15 +154,17 @@ class user_Controller{
             const {email}= req.body
 
             let account = await User.findOne({email})
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
             
-            const accountObject = account.toObject();
+            // const accountObject = account.toObject()
 
-            // Convert profile image buffer to base64 if it exists
-            if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-                accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
-            }
+            // // Convert profile image buffer to base64 if it exists
+            // if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+            //     accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            // }
 
-            res.status(200).json(accountObject)
+            res.status(200).json(account)
 
         }catch(error){
             console.log(error.message)
@@ -177,15 +178,17 @@ class user_Controller{
             const account_Id = req.params.id
 
             let account = await User.findById(account_Id)
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
             
-            const accountObject = account.toObject();
+            // const accountObject = account.toObject()
 
-            // Convert profile image buffer to base64 if it exists
-            if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-                accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
-            }
+            // // Convert profile image buffer to base64 if it exists
+            // if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+            //     accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+            // }
 
-            res.status(200).json(accountObject)
+            res.status(200).json(account)
 
         }catch(error){
             console.log(error.message)
@@ -196,25 +199,11 @@ class user_Controller{
     update_Acc_Info = async(req, res) =>{
         try{
             // wait for file upload
-            console.log("Uploading image...");
             await upload_Promise_img(req, res)
-
-            console.log("Request body:", req.body);
-            console.log("Uploaded file:", req.file);
-            
 
             // get info from body
             const {username, phone, underlying_condition, date_of_birth, address} = req.body
             const profile_image = req.file ? req.file.buffer : null
-
-            let parsedDateOfBirth = null;
-        if (date_of_birth) {
-            parsedDateOfBirth = new Date(date_of_birth);
-            // Ensure the date is valid
-            if (isNaN(parsedDateOfBirth)) {
-                return res.status(400).json({ error: 'Invalid date format for date_of_birth' });
-            }
-        }
 
             // get id
             const account_Id = req.params.id
@@ -225,7 +214,6 @@ class user_Controller{
             if(!account){
                 return res.status(404).json({error: 'Account not found'})
             }
-            console.log("Current account details:", account);
 
             // update
             if(username){
@@ -240,18 +228,35 @@ class user_Controller{
             if(date_of_birth){
                 account.date_of_birth = date_of_birth
             }
-            if(profile_image){
-                account.profile_image = profile_image
-            }
             if(address){
                 account.address = address
             }
 
-            account.profile_image = profile_image
+            if(!profile_image){ // if no image set as default 
+                account.profile_image = default_profile_img
+            }else if(profile_image){ // if image
 
+                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
+                const image_name =  `${account_Id}.jpg`
+
+                const images_Dir = path.join(__dirname, '../../../image/account-profile')
+                const image_Path = path.join(images_Dir, image_name)
+
+                // check if directory exits
+                if (!fs.existsSync(images_Dir)) {
+                    fs.mkdirSync(images_Dir, {recursive: true})
+                }
+
+                // save image
+                fs.writeFileSync(image_Path, profile_image)
+
+                const profile_image_path = `${req.protocol}://${req.get('host')}/images/account-profile/${image_name}`
+
+                account.profile_image = profile_image_path
+            }
+            
             await account.save()
-            console.log("Account updated successfully:", account);
 
             res.status(200).json(account)
 
@@ -260,7 +265,6 @@ class user_Controller{
             res.status(400).json({error: error.message})
         }
     }
-    
 
     soft_Delete_Account = async(req, res) =>{
         try{
@@ -383,7 +387,6 @@ class user_Controller{
         }
     }
 
-    
     reset_password = async(req, res) =>{
         try {
             const token = req.params.token
@@ -408,8 +411,6 @@ class user_Controller{
             res.status(400).json({error: error.message})
         }
     }
-
-    
 
     change_password = async(req, res) =>{
         try{
@@ -457,6 +458,10 @@ class user_Controller{
             }
 
             await account.save()
+
+            account = await Doctor.findById(account_Id)
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
             
             res.status(200).json(account)
         }catch(error){
@@ -495,7 +500,72 @@ class user_Controller{
             // find doctor
             const doctor = await Doctor.findById(account_Id)
 
-            res.status(201).json(doctor.active_hours)
+            // find doctor existing appointments
+            const appointments = await Appointment.aggregate([
+                {   // by the same doctor
+                    $match: {doctor_id: new mongoose.Types.ObjectId(account_Id)}
+                },
+                {
+                    // group up appointments with similar appointment date, start and end time as one
+                    // count the sum of similar appointments forming each group
+                    $group: {
+                        _id: {
+                            appointment_day: "$appointment_day",
+                            appointment_time_start: "$appointment_time_start",
+                            appointment_time_end: "$appointment_time_end"
+                        },
+                        count: {$sum: 1}
+                    }
+                }
+            ])
+
+            // time that are fully booked
+            let fully_Booked_Hour = []
+
+            // time that are not fully booked
+            let booked_Hour = []
+
+            // go through each appointment
+            doctor.active_hours.forEach((active_Hour) =>{
+                // go through each active hour
+                appointments.forEach((appointment) =>{
+                    // day format: Day-of-Week specific-date 
+                    const day_Of_Week = appointment._id.appointment_day.split(' ')[0]
+                    if (
+                        active_Hour.day === day_Of_Week &&
+                        active_Hour.start_time === appointment._id.appointment_time_start &&
+                        active_Hour.end_time === appointment._id.appointment_time_end &&
+                        appointment.count >= active_Hour.appointment_limit
+                    ){
+                        fully_Booked_Hour.push({
+                            date: appointment._id.appointment_day,
+                            start_time: active_Hour.start_time,
+                            end_time: active_Hour.end_time,
+                            appointment_count: appointment.count,
+                            appointment_limit: active_Hour.appointment_limit
+                        })
+                    } else if (
+                        active_Hour.day === day_Of_Week &&
+                        active_Hour.start_time === appointment._id.appointment_time_start &&
+                        active_Hour.end_time === appointment._id.appointment_time_end &&
+                        appointment.count < active_Hour.appointment_limit
+                    ){
+                        booked_Hour.push({
+                            date: appointment._id.appointment_day,
+                            start_time: active_Hour.start_time,
+                            end_time: active_Hour.end_time,
+                            appointment_count: appointment.count,
+                            appointment_limit: active_Hour.appointment_limit
+                        })
+                    }
+                })
+            })
+
+            res.status(201).json({
+                active_hours: doctor.active_hours,
+                booked: booked_Hour,
+                fully_booked: fully_Booked_Hour
+            })
 
         }catch(error){
             console.log(error.message)
@@ -505,9 +575,9 @@ class user_Controller{
 
     add_Doctor_Active_Hour = async(req, res) =>{
         try{
-            const {day, start_time, end_time, hour_type} = req.body
+            const {day, start_time, end_time, hour_type, appointment_limit} = req.body
 
-            if(!day || !start_time || !end_time || !hour_type){
+            if(!day || !start_time || !end_time || !hour_type || !appointment_limit){
                 throw new Error('Missing information')
             }
 
@@ -515,7 +585,7 @@ class user_Controller{
             const account_Id = req.params.id
 
             // check overlap
-            const new_Active_Hour = {day, start_time, end_time, hour_type}
+            const new_Active_Hour = {day, start_time, end_time, hour_type, appointment_limit}
 
             const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id)
             
@@ -541,7 +611,7 @@ class user_Controller{
     update_Doctor_Active_Hour = async(req, res) =>{
         try{
             const {
-                day, start_time, end_time, hour_type, 
+                day, start_time, end_time, hour_type, appointment_limit, 
                 old_day, old_start_time, old_end_time, old_hour_type
             } = req.body
 
@@ -559,7 +629,7 @@ class user_Controller{
                 end_time: old_end_time, 
                 hour_type: old_hour_type
             }
-            const new_Active_Hour = {day, start_time, end_time, hour_type}
+            const new_Active_Hour = {day, start_time, end_time, hour_type, appointment_limit}
 
             const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time)
             
@@ -644,6 +714,8 @@ class user_Controller{
             }
 
             const doctors = await Doctor.find(query)
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
 
             res.status(200).json(doctors)
         }catch(error){
@@ -660,7 +732,8 @@ class user_Controller{
                 {email}, 
                 {verified},
                 {new: true}
-            )
+            ).populate('speciality_id', 'name')
+            .populate('region_id', 'name')
 
             res.status(200).json(doctor)
         }catch(error){
@@ -677,7 +750,8 @@ class user_Controller{
                 {email}, 
                 {role},
                 {new: true}
-            )
+            ).populate('speciality_id', 'name')
+            .populate('region_id', 'name')
 
             res.status(200).json(account)
         }catch(error){
@@ -686,6 +760,20 @@ class user_Controller{
         }
     }
     
+    search_Doctor_By_Name = async(req, res) =>{
+        try {
+            const {name} = req.body
+    
+            const doctors = await Doctor.find({
+                name: {$regex: name, $options: 'i'}
+            }).populate('speciality_id', 'name')
+            .populate('region_id', 'name')
+    
+            res.status(200).json(doctors)
+        } catch (error) {
+            res.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = new user_Controller

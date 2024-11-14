@@ -17,7 +17,7 @@ function routes(app){
     app.use('/appointment', appointment_Routes)
     app.use('/article', article_Routes)
     app.use('/post', post_Routes)
-    app.use('/images', express.static(path.join(__dirname, '../../../image')))
+    app.use('/images', express.static(path.join(__dirname, '../../image')))
 }
 
 module.exports = routes

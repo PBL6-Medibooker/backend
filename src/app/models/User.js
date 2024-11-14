@@ -3,6 +3,10 @@ const validator = require('validator')
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
+require('dotenv').config()
+
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+
 const User = new Schema({
     email: {
         type: String,
@@ -25,7 +29,7 @@ const User = new Schema({
         default: 'user'
     },
     profile_image: { 
-        type: Buffer,
+        type: String,
         default: null
     },
     underlying_condition: {
@@ -74,7 +78,12 @@ User.statics.add_User = async function(email, password, username, phone) {
     const salt = await bcrypt.genSalt(10)
     const hass = await bcrypt.hash(password, salt)
 
-    const user = await this.create({email, password: hass, username, phone})
+    const user = await this.create({
+        email, 
+        password: hass, 
+        username, 
+        phone, 
+        profile_image: default_profile_img})
 
     return user
 }

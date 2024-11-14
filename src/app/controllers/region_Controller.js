@@ -50,6 +50,15 @@ class region_Controller{
             const region_Id = req.params.id
 
             // update
+            if (!name) {
+                throw new Error('Missing information')
+            }
+
+            const existing_Region = await Region.findOne({name, _id: {$ne: region_Id}})
+            if (existing_Region) {
+                throw new Error('Region already exits')
+            }
+                
             const region = await Region.findByIdAndUpdate(region_Id, 
                 {name}, 
                 {new: true})
@@ -135,6 +144,33 @@ class region_Controller{
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})
+        }
+    }
+
+    get_Region = async (req, res) => {
+        try {
+          const { region_Id } = req.body
+    
+          //   console.log("Received region_Id:", region_Id);
+    
+          if (!mongoose.Types.ObjectId.isValid(region_Id)) {
+            return res
+              .status(400)
+              .json({ success: false, message: "Invalid region ID format" })
+          }
+    
+          const region = await Region.findById(region_Id);
+    
+          if (!region) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Region not found" })
+          }
+    
+          res.status(200).json({ success: true, data: region })
+        } catch (error) {
+          console.log("Error:", error.message);
+          res.status(500).json({ success: false, error: error.message })
         }
     }
 }
