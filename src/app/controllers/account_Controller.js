@@ -2,6 +2,7 @@ const User = require("../models/User");
 const Doctor = require("../models/Doctor");
 const Region = require("../models/Region");
 const Speciality = require("../models/Speciality");
+const Appointment = require("../models/Appointment");
 
 const multer = require("multer");
 const { promisify } = require("util");
@@ -10,6 +11,7 @@ const fs = require("fs");
 const path = require("path");
 const mime = require("mime-types");
 const nodemailer = require("nodemailer");
+const mongoose = require("mongoose");
 
 require("dotenv").config();
 

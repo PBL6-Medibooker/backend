@@ -37,5 +37,19 @@ router.post(
   "/restore-appointment/:id",
   appointment_Controller.restore_Appointment
 );
+router.post(
+  "/get-appointment-by-doctor/:id",
+  appointment_Controller.get_Appointments_By_Doctor
+);
+
+router.get(
+  "/get-appointment-by-month",
+  appointment_Controller.getAppointmentCountByMonth
+);
+
+router.get(
+  "/get-appointment-info/:id",
+  appointment_Controller.getAppointmentInfo
+);
 
 module.exports = router;

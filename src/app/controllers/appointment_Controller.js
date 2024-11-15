@@ -1,6 +1,7 @@
 const Appointment = require("../models/Appointment");
 const Doctor = require("../models/Doctor");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 
 class appointment_Controller {
   check_Appointment_time = async (
@@ -108,24 +109,38 @@ class appointment_Controller {
   change_Appointment_Time = async (req, res) => {
     try {
       const appointment_id = req.params.id;
-      const { appointment_day, appointment_time_start, appointment_time_end } =
-        req.body;
+      const {
+        doctor_id,
+        appointment_day,
+        appointment_time_start,
+        appointment_time_end,
+      } = req.body;
 
       if (
         !appointment_time_start ||
         !appointment_time_end ||
-        !appointment_day
+        !appointment_day ||
+        !doctor_id
       ) {
         throw new Error("Missing information");
       }
 
-      const updatedAppointment = await Appointment.findByIdAndUpdate(
+      await this.check_Appointment_time(
+        doctor_id,
+        appointment_day,
+        appointment_time_start,
+        appointment_time_end
+      );
+
+      console.log(appointment_time_start, appointment_time_end);
+
+      const appointment = await Appointment.findByIdAndUpdate(
         appointment_id,
         { appointment_time_start, appointment_time_end },
         { new: true }
       );
 
-      res.status(200).json(updatedAppointment);
+      res.status(200).json(appointment);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -282,6 +297,109 @@ class appointment_Controller {
       res.status(200).json(appointment);
     } catch (error) {
       res.status(400).json({ error: error.message });
+    }
+  };
+
+  get_Appointments_By_Doctor = async (req, res) => {
+    try {
+      const { is_deleted } = req.body;
+      const doctor_id = req.params.id;
+
+      let query = { doctor_id };
+
+      if (is_deleted !== undefined) {
+        query.is_deleted = is_deleted;
+      }
+
+      const appointment = await Appointment.find(query);
+
+      res.status(200).json(appointment);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  getAppointmentInfo = async (req, res) => {
+    try {
+      const appointment_id = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(appointment_id)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid Appointment ID format" });
+      }
+
+      const appointmentData = await Appointment.findById(appointment_id);
+      res.json({ success: true, appointmentData });
+    } catch (error) {
+      console.log(error);
+      res.json({ success: false, message: error.message });
+    }
+  };
+
+  getAppointmentCountByMonth = async (req, res) => {
+    try {
+      const result = await Appointment.aggregate([
+        {
+          $addFields: {
+            formattedDate: {
+              $trim: {
+                input: {
+                  $arrayElemAt: [
+                    { $split: ["$appointment_day", " "] }, // Split on the first space
+                    1,
+                  ],
+                },
+              },
+            },
+          },
+        },
+        {
+          // Convert the modified string (now in YYYY-MM-DD format) to a Date object
+          $addFields: {
+            date: {
+              $dateFromString: {
+                dateString: "$formattedDate",
+                format: "%Y-%m-%d",
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            yearMonth: { $dateToString: { format: "%Y-%m", date: "$date" } },
+          },
+        },
+        {
+          // Group by year and month
+          $group: {
+            _id: "$yearMonth",
+            appointmentCount: { $sum: 1 },
+          },
+        },
+        {
+          // Sort by year and month (ascending)
+          $sort: { _id: 1 },
+        },
+        {
+          // Project the result to include only the formatted date and count
+          $project: {
+            _id: 0,
+            month: "$_id",
+            appointmentCount: 1,
+          },
+        },
+      ]);
+
+      if (!result.length) {
+        return res.status(404).json({ message: "No appointments found." });
+      }
+
+      return res.status(200).json({ data: result });
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({
+        error: "An error occurred.",
+      });
     }
   };
 }
