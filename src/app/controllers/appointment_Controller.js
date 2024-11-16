@@ -1,8 +1,7 @@
 const Appointment = require('../models/Appointment')
 const Doctor = require('../models/Doctor')
-const Doctor = require("../models/Doctor")
-const User = require("../models/User")
-const mongoose = require("mongoose")
+const User = require('../models/User')
+const mongoose = require('mongoose')
 
 class appointment_Controller {
 
