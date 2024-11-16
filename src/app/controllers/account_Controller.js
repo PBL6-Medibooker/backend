@@ -775,5 +775,3 @@ class user_Controller{
         }
     }
 }
-
-module.exports = new user_Controller

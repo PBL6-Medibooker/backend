@@ -1,52 +1,52 @@
-const User = require('./User')
-const Speciality = require('./Speciality')
-const Region = require('./Region')
+const User = require("./User")
+const Speciality = require("./Speciality")
+const Region = require("./Region")
 
-const Moment = require('moment')
-const MomentRange = require('moment-range')
+const Moment = require("moment")
+const MomentRange = require("moment-range")
 const moment = MomentRange.extendMoment(Moment)
 
-const bcrypt = require('bcrypt')
-const validator = require('validator')
+const bcrypt = require("bcrypt")
+const validator = require("validator")
 
 const mongoose = require('mongoose')
 const Appointment = require('./Appointment')
 const Schema = mongoose.Schema
 
-require('dotenv').config()
+require("dotenv").config()
 
 const default_profile_img = process.env.DEFAULT_PROFILE_IMG
 
 const Doctor_Schema = new Schema({
-    speciality_id: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Speciality', 
-        required: false 
-    },
-    verified:{
-        type: Boolean,
-        default: false
-    },
-    active_hours: [{
-        day: String, // days of week
-        start_time: String, // hours:minutes
-        end_time: String, // hours:minutes
-        hour_type: String, // working or appointment
-        appointment_limit: Number // limit the number of appointments in the time frame
-    }],
-    bio: {
-        type: String,
-        default: 'undisclosed'
-    },
-    region_id: {
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Region', 
-        required: false 
-    },
-    proof: {
-        type: Buffer,
-        required: false
-    }
+  speciality_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Speciality",
+    required: false,
+  },
+  verified:{
+      type: Boolean,
+      default: false
+  },
+  active_hours: [{
+      day: String, // days of week
+      start_time: String, // hours:minutes
+      end_time: String, // hours:minutes
+      hour_type: String, // working or appointment
+      appointment_limit: Number // limit the number of appointments in the time frame
+  }],
+  bio: {
+      type: String,
+      default: 'undisclosed'
+  },
+  region_id: {
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Region', 
+      required: false 
+  },
+  proof: {
+      type: Buffer,
+      required: false
+  }
 })
 
 Doctor_Schema.path('active_hours').default(() => [])
@@ -139,6 +139,6 @@ Doctor_Schema.statics.Is_Time_Overlap = async function(new_time, account_Id, exc
     return false
 }
 
-const Doctor = User.discriminator('Doctor', Doctor_Schema)
+const Doctor = User.discriminator("Doctor", Doctor_Schema)
 
 module.exports = Doctor
