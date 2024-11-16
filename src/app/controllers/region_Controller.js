@@ -1,5 +1,5 @@
-const Region = require("../models/Region");
-const mongoose = require("mongoose");
+const Region = require('../models/Region')
+const mongoose = require('mongoose')
 
 class region_Controller {
   add_Region = async (req, res) => {
