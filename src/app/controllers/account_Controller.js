@@ -61,8 +61,8 @@ class user_Controller{
                 res.json({ success: false, message: "Invalid credentials" });
             }
         } catch (error) {
-          console.log(error);
-          res.json({ success: false, message: error.message });
+            console.log(error);
+            res.json({ success: false, message: error.message });
         }
     };
 
