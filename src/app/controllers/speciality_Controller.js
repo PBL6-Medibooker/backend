@@ -1,98 +1,96 @@
-const Speciality = require("../models/Speciality");
+const Speciality = require('../models/Speciality')
 
 // const sharp = require('sharp')
-const multer = require("multer");
-const { promisify } = require("util");
-const fs = require("fs");
-const path = require("path");
-const mime = require("mime-types");
-const mongoose = require("mongoose");
+const multer = require('multer')
+const { promisify } = require('util')
+const fs = require('fs')
+const path = require('path')
+const mime = require('mime-types')
+const mongoose = require('mongoose')
 
-const Doctor = require("../models/Doctor");
+const Doctor = require('../models/Doctor')
 
-require("dotenv").config();
+require('dotenv').config()
 
-const storage = multer.memoryStorage();
+const storage = multer.memoryStorage()
 
 const upload = multer({
   storage: storage,
   fileFilter: (res, file, cb) => {
     if (file.mimetype === "image/jpeg") {
-      cb(null, true);
+      cb(null, true)
     } else {
-      cb(new Error("Only JPG image files are allowed"));
+      cb(new Error("Only JPG image files are allowed"))
     }
   },
-}).single("speciality_image");
+}).single("speciality_image")
 
-const uploadPromise = promisify(upload);
+const uploadPromise = promisify(upload)
 
 class speciality_Controller {
   add_Speciality = async (req, res) => {
     try {
       // wait for file upload
-      await uploadPromise(req, res);
+      await uploadPromise(req, res)
 
       // get info from body
-      const { name, description } = req.body;
-      const speciality_image = req.file ? req.file.buffer : null;
+      const { name, description } = req.body
+      const speciality_image = req.file ? req.file.buffer : null
 
-      const exists_spec = await Speciality.findOne({ name });
+      const exists_spec = await Speciality.findOne({ name })
 
       if (exists_spec) {
-        throw new Error("Speciality already exits");
+        throw new Error("Speciality already exits")
       }
 
       //create
-      let speciality = await Speciality.create({ name, description });
+      let speciality = await Speciality.create({ name, description })
 
       if (!speciality_image) {
-        speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG;
+        speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
       } else if (speciality_image) {
         // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
-        const image_name = `${speciality._id}.jpg`;
+        const image_name = `${speciality._id}.jpg`
 
         const images_Dir = path.join(
           __dirname,
           "../../../image/speciality-logos"
-        );
-        const image_Path = path.join(images_Dir, image_name);
+        )
+        const image_Path = path.join(images_Dir, image_name)
 
         // check if directory exits
         if (!fs.existsSync(images_Dir)) {
-          fs.mkdirSync(images_Dir, { recursive: true });
+          fs.mkdirSync(images_Dir, { recursive: true })
         }
 
         // save image
-        fs.writeFileSync(image_Path, speciality_image);
+        fs.writeFileSync(image_Path, speciality_image)
 
-        const speciality_image_path = `${req.protocol}://${req.get(
-          "host"
-        )}/images/speciality-logos/${image_name}`;
+        const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
 
-        speciality.speciality_image = speciality_image_path;
+        speciality.speciality_image = speciality_image_path
 
-        await speciality.save();
+        await speciality.save()
       }
 
-      res.status(201).json(speciality);
+      res.status(201).json(speciality)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   get_Speciality_List = async (req, res) => {
     try {
       let specialities;
-      const { hidden_state } = req.body;
+      const { hidden_state } = req.body
 
       // find list of speciality
       if (hidden_state == "true") {
-        specialities = await Speciality.find({ is_deleted: true });
+        specialities = await Speciality.find({is_deleted: true})
       } else {
-        specialities = await Speciality.find({ is_deleted: false });
+        specialities = await Speciality.find({is_deleted: false})
       }
 
       // const specialities_With_Png_Images = specialities.map((speciality) => {
@@ -106,87 +104,85 @@ class speciality_Controller {
       //     return specialityObject
       // })
 
-      res.status(200).json(specialities);
+      res.status(200).json(specialities)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({error: error.message})
     }
   };
 
   update_Speciality = async (req, res) => {
     try {
       // wait for file upload
-      await uploadPromise(req, res);
+      await uploadPromise(req, res)
 
       // get info from body
-      const { name, description } = req.body;
-      const speciality_image = req.file ? req.file.buffer : null;
+      const { name, description } = req.body
+      const speciality_image = req.file ? req.file.buffer : null
 
       // get id
-      const speciality_Id = req.params.id;
+      const speciality_Id = req.params.id
 
       // find speciality
-      let speciality = await Speciality.findById(speciality_Id);
+      let speciality = await Speciality.findById(speciality_Id)
 
       if (!speciality) {
-        return res.status(404).json({ error: "Speciality not found" });
+        return res.status(404).json({ error: "Speciality not found" })
       }
 
       // update
       if (name) {
         const existingSpeciality = await Speciality.findOne({
           name,
-          _id: { $ne: speciality_Id },
-        });
+          _id: {$ne: speciality_Id},
+        })
         if (existingSpeciality) {
-          throw new Error("Speciality already exits");
+          throw new Error('Speciality already exits')
         }
-        speciality.name = name;
+        speciality.name = name
       }
       if (description) {
-        speciality.description = description;
+        speciality.description = description
       }
       if (!speciality_image) {
-        speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG;
+        speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
       } else if (speciality_image) {
         // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
-        const image_name = `${speciality._id}.jpg`;
+        const image_name = `${speciality._id}.jpg`
 
         const images_Dir = path.join(
           __dirname,
-          "../../../image/speciality-logos"
-        );
-        const image_Path = path.join(images_Dir, image_name);
+          '../../../image/speciality-logos'
+        )
+        const image_Path = path.join(images_Dir, image_name)
 
         // check if directory exits
         if (!fs.existsSync(images_Dir)) {
-          fs.mkdirSync(images_Dir, { recursive: true });
+          fs.mkdirSync(images_Dir, {recursive: true})
         }
 
         // save image
-        fs.writeFileSync(image_Path, speciality_image);
+        fs.writeFileSync(image_Path, speciality_image)
 
-        const speciality_image_path = `${req.protocol}://${req.get(
-          "host"
-        )}/images/speciality-logos/${image_name}`;
+        const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
 
-        speciality.speciality_image = speciality_image_path;
+        speciality.speciality_image = speciality_image_path
       }
 
-      await speciality.save();
+      await speciality.save()
 
-      res.status(200).json(speciality);
+      res.status(200).json(speciality)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({error: error.message})
     }
-  };
+  }
 
   soft_Delete_Specialty = async (req, res) => {
     try {
       // get id list
-      const { speciality_Ids } = req.body;
+      const { speciality_Ids } = req.body
 
       // if no ids
       if (
@@ -194,29 +190,29 @@ class speciality_Controller {
         !Array.isArray(speciality_Ids) ||
         speciality_Ids.length === 0
       ) {
-        return res.status(400).json({ error: "No IDs provided" });
+        return res.status(400).json({error: 'No IDs provided'})
       }
 
       // update
       const result = await Speciality.updateMany(
-        { _id: { $in: speciality_Ids } },
-        { is_deleted: true }
-      );
+        {_id: {$in: speciality_Ids}},
+        {is_deleted: true}
+      )
 
       res.status(200).json({
-        message: "Speciality soft deleted",
+        message: 'Speciality soft deleted',
         modifiedCount: result.modifiedCount,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({error: error.message})
     }
-  };
+  }
 
   restore_Deleted_Specialty = async (req, res) => {
     try {
       // get id list
-      const { speciality_Ids } = req.body;
+      const {speciality_Ids} = req.body
 
       // if no ids
       if (
@@ -224,29 +220,29 @@ class speciality_Controller {
         !Array.isArray(speciality_Ids) ||
         speciality_Ids.length === 0
       ) {
-        return res.status(400).json({ error: "No IDs provided" });
+        return res.status(400).json({error: 'No IDs provided'})
       }
 
       // update
       const result = await Speciality.updateMany(
-        { _id: { $in: speciality_Ids } },
-        { is_deleted: false }
-      );
+        {_id: { $in: speciality_Ids}},
+        {is_deleted: false}
+      )
 
       res.status(200).json({
-        message: "Speciality restored",
+        message: 'Speciality restored',
         modifiedCount: result.modifiedCount,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({error: error.message})
     }
-  };
+  }
 
   perma_Delete_Specialty = async (req, res) => {
     try {
       // get id list
-      const { speciality_Ids } = req.body;
+      const { speciality_Ids } = req.body
 
       // if no ids
       if (
@@ -254,16 +250,16 @@ class speciality_Controller {
         !Array.isArray(speciality_Ids) ||
         speciality_Ids.length === 0
       ) {
-        return res.status(400).json({ error: "No IDs provided" });
+        return res.status(400).json({error: 'No IDs provided'})
       }
 
       // delete
       const result = await Speciality.deleteMany({
-        _id: { $in: speciality_Ids },
-      });
+        _id: {$in: speciality_Ids},
+      })
 
       res.status(200).json({
-        message: "Speciality deleted",
+        message: 'Speciality deleted',
         deletedCount: result.deletedCount,
       });
     } catch (error) {
