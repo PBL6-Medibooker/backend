@@ -1,13 +1,13 @@
-const User = require("./User")
-const Speciality = require("./Speciality")
-const Region = require("./Region")
+const User = require('./User')
+const Speciality = require('./Speciality')
+const Region = require('./Region')
 
-const Moment = require("moment")
-const MomentRange = require("moment-range")
+const Moment = require('moment')
+const MomentRange = require('moment-range')
 const moment = MomentRange.extendMoment(Moment)
 
-const bcrypt = require("bcrypt")
-const validator = require("validator")
+const bcrypt = require('bcrypt')
+const validator = require('validator')
 
 const mongoose = require('mongoose')
 const Appointment = require('./Appointment')
@@ -20,7 +20,7 @@ const default_profile_img = process.env.DEFAULT_PROFILE_IMG
 const Doctor_Schema = new Schema({
   speciality_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Speciality",
+    ref: 'Speciality',
     required: false,
   },
   verified:{
