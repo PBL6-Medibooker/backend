@@ -89,7 +89,7 @@ class appointment_Controller {
 
   update_Appointment_Info = async (req, res) => {
     try {
-      const appointment_id = req.params.id;
+      const appointment_id = req.params.id
       const { health_issue, type_service } = req.body
 
       // Find and update the appointment
@@ -109,7 +109,7 @@ class appointment_Controller {
 
   change_Appointment_Time = async (req, res) => {
     try {
-      const appointment_id = req.params.id;
+      const appointment_id = req.params.id
       const {
         doctor_id,
         appointment_day,
@@ -223,7 +223,7 @@ class appointment_Controller {
 
   get_All_Appointment = async (req, res) => {
     try {
-      const { is_deleted } = req.body
+      const {is_deleted} = req.body
       let query = {}
 
       if (is_deleted !== undefined) {
@@ -242,13 +242,13 @@ class appointment_Controller {
 
   get_Appointment_By_User_Id = async (req, res) => {
     try {
-      const { is_deleted } = req.body;
-      const user_id = req.params.id;
+      const {is_deleted} = req.body
+      const user_id = req.params.id
 
       let query = { user_id };
 
       if (is_deleted !== undefined) {
-        query.is_deleted = is_deleted;
+        query.is_deleted = is_deleted
       }
 
       const appointment = await Appointment.findOne(query)
@@ -267,7 +267,7 @@ class appointment_Controller {
 
       const appointment = await Appointment.findById(
         appointment_id,
-        "insurance"
+        'insurance'
       )
 
       res.status(200).json(appointment.insurance)
@@ -288,18 +288,18 @@ class appointment_Controller {
 
       res.status(200).json(appointment)
     } catch (error) {
-      res.status(400).json({ error: error.message })
+      res.status(400).json({error: error.message})
     }
   }
 
   restore_Appointment = async (req, res) => {
     try {
-      const appointment_id = req.params.id;
+      const appointment_id = req.params.id
 
       const appointment = await Appointment.findByIdAndUpdate(
         appointment_id,
-        { is_deleted: false },
-        { new: true }
+        {is_deleted: false},
+        {new: true}
       )
       .populate('user_id', 'username date_of_birth profile_image')
       .populate('doctor_id', 'username')
@@ -332,11 +332,11 @@ class appointment_Controller {
 
   getAppointmentInfo = async (req, res) => {
     try {
-      const appointment_id = req.params.id;
+      const appointment_id = req.params.id
       if (!mongoose.Types.ObjectId.isValid(appointment_id)) {
         return res
           .status(400)
-          .json({success: false, message: "Invalid Appointment ID format"})
+          .json({success: false, message: 'Invalid Appointment ID format'})
       }
 
       const appointmentData = await Appointment.findById(appointment_id)
