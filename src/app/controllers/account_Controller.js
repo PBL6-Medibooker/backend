@@ -854,6 +854,24 @@ class user_Controller {
       res.status(400).json({ error: error.message });
     }
   };
+
+  getProfileAdmin = async (req, res) => {
+    try {
+      const adminEmail = req.user; // Getting the email from the decoded JWT (attached by Auth_Admin)
+      const adminData = await User.findOne({ email: adminEmail }).select(
+        "-password"
+      );
+
+      if (!adminData) {
+        return res.status(404).json({ error: "Admin profile not found" });
+      }
+
+      res.json({ success: true, adminData });
+    } catch (error) {
+      console.log(error.message);
+      res.status(400).json({ error: error.message });
+    }
+  };
 }
 
 module.exports = new user_Controller();

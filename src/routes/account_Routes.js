@@ -1,5 +1,6 @@
 const account_Controller = require("../app/controllers/account_Controller");
 const require_Auth = require("../middleware/require_Auth");
+const jwt = require("jsonwebtoken");
 
 const express = require("express");
 const router = express.Router();
@@ -39,5 +40,10 @@ router.post("/change-acc-role", account_Controller.change_Account_Role);
 router.post("/forgot-pass", account_Controller.forgot_password);
 router.get("/reset-password/:token", account_Controller.reset_password);
 router.post("/search-doc-name", account_Controller.search_Doctor_By_Name);
+router.get(
+  "/get-admin-profile",
+  require_Auth.Auth_Admin,
+  account_Controller.getProfileAdmin
+);
 
 module.exports = router;
