@@ -1,7 +1,7 @@
-const appointment_Controller = require("../app/controllers/appointment_Controller")
-const require_Auth = require("../middleware/require_Auth")
+const appointment_Controller = require('../app/controllers/appointment_Controller')
+const require_Auth = require('../middleware/require_Auth')
 
-const express = require("express")
+const express = require('express')
 const router = express.Router()
 
 
