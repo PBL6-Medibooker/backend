@@ -17,13 +17,13 @@ const storage = multer.memoryStorage()
 const upload = multer({
   storage: storage,
   fileFilter: (res, file, cb) => {
-    if (file.mimetype === "image/jpeg") {
+    if (file.mimetype === 'image/jpeg') {
       cb(null, true)
     } else {
-      cb(new Error("Only JPG image files are allowed"))
+      cb(new Error('Only JPG image files are allowed'))
     }
   },
-}).single("speciality_image")
+}).single('speciality_image')
 
 const uploadPromise = promisify(upload)
 
