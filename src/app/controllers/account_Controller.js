@@ -43,28 +43,11 @@ const upload_img = multer({
 const upload_Promise_pdf = promisify(upload_pdf)
 const upload_Promise_img = promisify(upload_img)
 
-class user_Controller{
+class account_Controller{
     create_Token = (_id, expiresIn = '1d') => {
         return jwt.sign({_id}, process.env.JWTSecret, {expiresIn})
     }
-
-    loginAdmin = async (req, res) => {
-        try {
-            const { email, password } = req.body;
-            if (
-                email === process.env.ADMIN_EMAIL &&
-                password === process.env.ADMIN_PASSWORD
-            ) {
-                const token = jwt.sign(email + password, process.env.JWTSecret);
-                res.json({ success: true, token });
-            } else {
-                res.json({ success: false, message: "Invalid credentials" });
-            }
-        } catch (error) {
-            console.log(error);
-            res.json({ success: false, message: error.message });
-        }
-    };
+    
 
     acc_Login = async(req, res) => {
         // get info from body
@@ -793,3 +776,5 @@ class user_Controller{
         }
     }
 }
+
+module.exports = new account_Controller

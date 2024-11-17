@@ -5,7 +5,6 @@ const express = require('express')
 const router = express.Router()
 
 router.post('/login', account_Controller.acc_Login)
-router.post('/admin-login', account_Controller.loginAdmin)
 router.post('/signup', account_Controller.acc_Signup)
 router.post('/acc-list', account_Controller.get_Account_List)
 router.post('/get-acc-mail', account_Controller.get_Account_By_Mail)
