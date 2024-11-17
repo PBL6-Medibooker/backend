@@ -4,8 +4,8 @@ require('dotenv').config()
 async function connect() {
     try{
         await mongoose.connect(process.env.AtlasURI,{
-            useNewUrlParser: true, 
-            useUnifiedTopology: true,
+            // useNewUrlParser: true, 
+            // useUnifiedTopology: true,
             family: 4,
         })
         console.log('Database connection successful')
