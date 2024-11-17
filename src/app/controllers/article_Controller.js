@@ -31,11 +31,7 @@ class article_Controller {
 
       const { email, article_title, article_content } = req.body;
       const article_image = req.file ? req.file.buffer : null;
-      console.log(article_image);
-      
-
-      console.log(article_image);
-
+   
       const doctor = await Doctor.findOne({ email }, { _id: 1 });
 
       let article = await Article.create({

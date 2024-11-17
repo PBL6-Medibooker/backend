@@ -857,7 +857,7 @@ class user_Controller {
 
   getProfileAdmin = async (req, res) => {
     try {
-      const adminEmail = req.user; // Getting the email from the decoded JWT (attached by Auth_Admin)
+      const adminEmail = req.user; 
       const adminData = await User.findOne({ email: adminEmail }).select(
         "-password"
       );
