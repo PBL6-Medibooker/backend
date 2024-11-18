@@ -1,38 +1,38 @@
-const Article = require("../models/Article");
-const Doctor = require("../models/Doctor");
-const Speciality = require("../models/Speciality");
+const Article = require("../models/Article")
+const Doctor = require("../models/Doctor")
+const Speciality = require("../models/Speciality")
 
-const multer = require("multer");
-const { promisify } = require("util");
-const fs = require("fs");
-const path = require("path");
-const mime = require("mime-types");
-require("dotenv").config();
+const multer = require("multer")
+const { promisify } = require("util")
+const fs = require("fs")
+const path = require("path")
+const mime = require("mime-types")
+require("dotenv").config()
 
-const storage = multer.memoryStorage();
+const storage = multer.memoryStorage()
 
 const upload = multer({
   storage: storage,
   fileFilter: (res, file, cb) => {
     if (file.mimetype === "image/jpeg") {
-      cb(null, true);
+      cb(null, true)
     } else {
-      cb(new Error("Only JPG image files are allowed"));
+      cb(new Error("Only JPG image files are allowed"))
     }
   },
-}).single("article_img");
+}).single("article_img")
 
-const uploadPromise = promisify(upload);
+const uploadPromise = promisify(upload)
 
 class article_Controller {
   add_Article = async (req, res) => {
     try {
-      await uploadPromise(req, res);
+      await uploadPromise(req, res)
 
-      const { email, article_title, article_content } = req.body;
-      const article_image = req.file ? req.file.buffer : null;
+      const { email, article_title, article_content } = req.body
+      const article_image = req.file ? req.file.buffer : null
    
-      const doctor = await Doctor.findOne({ email }, { _id: 1 });
+      const doctor = await Doctor.findOne({ email }, { _id: 1 })
 
       let article = await Article.create({
         doctor_id: doctor._id,
@@ -41,40 +41,40 @@ class article_Controller {
         article_image: article_image
           ? article_image
           : process.env.DEFAULT_SPECIALITY_IMG,
-      });
+      })
 
       if (!article_image) {
-        article.article_image = process.env.DEFAULT_SPECIALITY_IMG;
+        article.article_image = process.env.DEFAULT_SPECIALITY_IMG
       } else if (article_image) {
         // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
-        const image_name = `${article._id}.jpg`;
+        const image_name = `${article._id}.jpg`
 
-        const images_Dir = path.join(__dirname, "../../../image/articles");
-        const image_Path = path.join(images_Dir, image_name);
+        const images_Dir = path.join(__dirname, "../../../image/articles")
+        const image_Path = path.join(images_Dir, image_name)
 
         // check if directory exits
         if (!fs.existsSync(images_Dir)) {
-          fs.mkdirSync(images_Dir, { recursive: true });
+          fs.mkdirSync(images_Dir, { recursive: true })
         }
 
         // save image
-        fs.writeFileSync(image_Path, article_image);
+        fs.writeFileSync(image_Path, article_image)
 
         const article_image_path = `${req.protocol}://${req.get(
           "host"
-        )}/images/articles/${image_name}`;
+        )}/images/articles/${image_name}`
 
-        article.article_image = article_image_path;
+        article.article_image = article_image_path
 
-        await article.save();
+        await article.save()
       }
 
-      res.status(201).json(article);
+      res.status(201).json(article)
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   get_Article = async(req, res) =>{
     try{
@@ -251,7 +251,7 @@ soft_Delete_Article = async(req, res) =>{
 
       // if no ids
       if (!article_ids || !Array.isArray(article_ids) || article_ids.length === 0) {
-          return res.status(400).json({error: 'No IDs provided'});
+          return res.status(400).json({error: 'No IDs provided'})
       }
 
       const result = await Article.updateMany(
@@ -276,7 +276,7 @@ restore_Article = async(req, res) =>{
 
       // if no ids
       if (!article_ids || !Array.isArray(article_ids) || article_ids.length === 0) {
-          return res.status(400).json({error: 'No IDs provided'});
+          return res.status(400).json({error: 'No IDs provided'})
       }
 
       const result = await Article.updateMany(
@@ -301,7 +301,7 @@ perma_Delete_Article = async(req, res) =>{
 
       // if no ids
       if (!article_ids || !Array.isArray(article_ids) || article_ids.length === 0) {
-          return res.status(400).json({error: 'No IDs provided'});
+          return res.status(400).json({error: 'No IDs provided'})
       }
 
       const result = await Article.deleteMany(
@@ -353,7 +353,7 @@ search_Article_By_Title_and_Content = async(req, res) =>{
 
 getArticlesByMonth = async (req, res) => {
   try {
-    const { year } = req.body; 
+    const { year } = req.body 
 
     const articlesByMonth = await Article.aggregate([
       {
@@ -374,19 +374,19 @@ getArticlesByMonth = async (req, res) => {
       {
         $sort: { "_id.month": 1 },
       },
-    ]);
+    ])
 
     
     const result = Array.from({ length: 12 }, (_, i) => {
-      const monthData = articlesByMonth.find((item) => item._id.month === i + 1);
-      return { month: i + 1, count: monthData ? monthData.count : 0 };
-    });
+      const monthData = articlesByMonth.find((item) => item._id.month === i + 1)
+      return { month: i + 1, count: monthData ? monthData.count : 0 }
+    })
 
-    res.status(200).json(result);
+    res.status(200).json(result)
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
  getTop5ArticleBySpeciality = async (req, res) => {
   try {
@@ -430,13 +430,13 @@ getArticlesByMonth = async (req, res) => {
 
       
       { $limit: 5 },
-    ]);
+    ])
 
     if (!result.length) {
       return res.status(404).json({
         success: false,
         message: 'No specialities found with associated articles.',
-      });
+      })
     }
 
    
@@ -444,19 +444,19 @@ getArticlesByMonth = async (req, res) => {
       success: true,
       data: result,
       message: 'Top 5 specialities by article count retrieved successfully',
-    });
+    })
   } catch (error) {
-    console.error('Error fetching top specialities:', error);
+    console.error('Error fetching top specialities:', error)
     res.status(500).json({
       success: false,
       message: 'Failed to fetch top specialities.',
-    });
+    })
   }
-};
+}
 
 
 
 
 }
 
-module.exports = new article_Controller();
+module.exports = new article_Controller()

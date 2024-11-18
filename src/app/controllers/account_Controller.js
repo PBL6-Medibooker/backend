@@ -1,153 +1,153 @@
-const User = require("../models/User");
-const Doctor = require("../models/Doctor");
-const Region = require("../models/Region");
-const Speciality = require("../models/Speciality");
-const Appointment = require("../models/Appointment");
+const User = require("../models/User")
+const Doctor = require("../models/Doctor")
+const Region = require("../models/Region")
+const Speciality = require("../models/Speciality")
+const Appointment = require("../models/Appointment")
 
-const multer = require("multer");
-const { promisify } = require("util");
-const jwt = require("jsonwebtoken");
-const fs = require("fs");
-const path = require("path");
-const mime = require("mime-types");
-const nodemailer = require("nodemailer");
-const mongoose = require("mongoose");
+const multer = require("multer")
+const { promisify } = require("util")
+const jwt = require("jsonwebtoken")
+const fs = require("fs")
+const path = require("path")
+const mime = require("mime-types")
+const nodemailer = require("nodemailer")
+const mongoose = require("mongoose")
 
-require("dotenv").config();
+require("dotenv").config()
 
-const default_profile_img = process.env.DEFAULT_PROFILE_IMG;
-const storage = multer.memoryStorage();
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+const storage = multer.memoryStorage()
 
 const upload_pdf = multer({
   storage: storage,
   fileFilter: (res, file, cb) => {
     if (file.mimetype === "application/pdf") {
-      cb(null, true);
+      cb(null, true)
     } else {
-      cb(new Error("Only PDF files are allowed"));
+      cb(new Error("Only PDF files are allowed"))
     }
   },
-}).single("proof");
+}).single("proof")
 
 const upload_img = multer({
   storage: storage,
   fileFilter: (res, file, cb) => {
     if (file.mimetype === "image/jpeg") {
-      cb(null, true);
+      cb(null, true)
     } else {
-      cb(new Error("Only JPG image files are allowed"));
+      cb(new Error("Only JPG image files are allowed"))
     }
   },
-}).single("profile_image");
+}).single("profile_image")
 
-const upload_Promise_pdf = promisify(upload_pdf);
-const upload_Promise_img = promisify(upload_img);
+const upload_Promise_pdf = promisify(upload_pdf)
+const upload_Promise_img = promisify(upload_img)
 
 class user_Controller {
   create_Token = (_id, expiresIn = "1d") => {
-    return jwt.sign({ _id }, process.env.JWTSecret, { expiresIn });
-  };
+    return jwt.sign({ _id }, process.env.JWTSecret, { expiresIn })
+  }
 
   // API for admin login
 
   loginAdmin = async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password } = req.body
       if (
         email === process.env.ADMIN_EMAIL &&
         password === process.env.ADMIN_PASSWORD
       ) {
-        const token = jwt.sign(email + password, process.env.JWTSecret);
-        res.json({ success: true, token });
+        const token = jwt.sign(email + password, process.env.JWTSecret)
+        res.json({ success: true, token })
       } else {
-        res.json({ success: false, message: "Invalid credentials" });
+        res.json({ success: false, message: "Invalid credentials" })
       }
     } catch (error) {
-      console.log(error);
-      res.json({ success: false, message: error.message });
+      console.log(error)
+      res.json({ success: false, message: error.message })
     }
-  };
+  }
 
   acc_Login = async (req, res) => {
     // get info from body
-    const { email, password } = req.body;
-    console.log(req.headers["content-type"]);
+    const { email, password } = req.body
+    console.log(req.headers["content-type"])
     // get account
     try {
-      let acc;
-      acc = await User.login(email, password);
+      let acc
+      acc = await User.login(email, password)
 
-      const token = this.create_Token(acc._id);
-      const role = acc.role;
+      const token = this.create_Token(acc._id)
+      const role = acc.role
 
       if (acc instanceof Doctor) {
-        const verified = acc.verified;
-        res.status(200).json({ email, token, role, verified });
+        const verified = acc.verified
+        res.status(200).json({ email, token, role, verified })
       } else {
-        res.status(200).json({ email, token, role });
+        res.status(200).json({ email, token, role })
       }
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   acc_Signup = async (req, res) => {
     try {
       // wait for file upload
-      await upload_Promise_pdf(req, res);
+      await upload_Promise_pdf(req, res)
 
       // get info from body
-      const { email, password, username, phone, is_doc } = req.body;
-      const proof = req.file ? req.file.buffer : null;
-      const role = "user";
-      let acc;
+      const { email, password, username, phone, is_doc } = req.body
+      const proof = req.file ? req.file.buffer : null
+      const role = "user"
+      let acc
 
       // add account
       if (is_doc == "1") {
         //if doctor account
         // console.log('doc')
-        acc = await Doctor.add_Doctor(email, password, username, phone, proof);
+        acc = await Doctor.add_Doctor(email, password, username, phone, proof)
       } else {
         // console.log('not doc')
-        acc = await User.add_User(email, password, username, phone);
+        acc = await User.add_User(email, password, username, phone)
       }
       // console.log(acc)
 
       // create token and respone
-      const token = this.create_Token(acc._id);
-      res.status(201).json({ email, token, role });
+      const token = this.create_Token(acc._id)
+      res.status(201).json({ email, token, role })
     } catch (error) {
       //if user account
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   get_Account_List = async (req, res) => {
     try {
-      let accounts, query;
-      const { user, hidden_state, verified } = req.body;
+      let accounts, query
+      const { user, hidden_state, verified } = req.body
 
-      query = { is_deleted: hidden_state };
+      query = { is_deleted: hidden_state }
 
       if (user === true) {
         // Handle users
 
-        query.__t = { $ne: "Doctor" };
+        query.__t = { $ne: "Doctor" }
 
-        accounts = await User.find(query);
+        accounts = await User.find(query)
       } else {
         // Handle doctors
-        query = { is_deleted: hidden_state };
+        query = { is_deleted: hidden_state }
 
         if (verified !== undefined) {
-          query.verified = verified;
+          query.verified = verified
         }
 
         accounts = await Doctor.find(query)
           .populate("speciality_id", "name")
-          .populate("region_id", "name");
+          .populate("region_id", "name")
       }
 
       // const accounts_With_Png_Images = accounts.map((account) => {
@@ -155,146 +155,146 @@ class user_Controller {
 
       //     if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
       //         // Convert buffer to base64 string
-      //         accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+      //         accountObject.profile_image = `data:image/pngbase64,${accountObject.profile_image.toString('base64')}`
       //     }
 
       //     return accountObject
       // })
 
-      res.status(200).json(accounts);
+      res.status(200).json(accounts)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   get_Account_By_Mail = async (req, res) => {
     try {
       // get id
-      const { email } = req.body;
+      const { email } = req.body
 
       let account = await User.findOne({ email })
         .populate("speciality_id", "name")
-        .populate("region_id", "name");
+        .populate("region_id", "name")
 
       // const accountObject = account.toObject()
 
       // // Convert profile image buffer to base64 if it exists
       // if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-      //     accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+      //     accountObject.profile_image = `data:image/pngbase64,${accountObject.profile_image.toString('base64')}`
       // }
 
-      res.status(200).json(account);
+      res.status(200).json(account)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   get_Account_By_Id = async (req, res) => {
     try {
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       let account = await User.findById(account_Id)
         .populate("speciality_id", "name")
-        .populate("region_id", "name");
+        .populate("region_id", "name")
 
       // const accountObject = account.toObject()
 
       // // Convert profile image buffer to base64 if it exists
       // if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
-      //     accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
+      //     accountObject.profile_image = `data:image/pngbase64,${accountObject.profile_image.toString('base64')}`
       // }
 
-      res.status(200).json(account);
+      res.status(200).json(account)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   update_Acc_Info = async (req, res) => {
     try {
       // wait for file upload
-      await upload_Promise_img(req, res);
+      await upload_Promise_img(req, res)
 
       // get info from body
       const { username, phone, underlying_condition, date_of_birth, address } =
-        req.body;
-      const profile_image = req.file ? req.file.buffer : null;
+        req.body
+      const profile_image = req.file ? req.file.buffer : null
 
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       // find account
-      let account = await User.findById(account_Id);
+      let account = await User.findById(account_Id)
 
       if (!account) {
-        return res.status(404).json({ error: "Account not found" });
+        return res.status(404).json({ error: "Account not found" })
       }
 
       // update
       if (username) {
-        account.username = username;
+        account.username = username
       }
       if (phone) {
-        account.phone = phone;
+        account.phone = phone
       }
       if (underlying_condition) {
-        account.underlying_condition = underlying_condition;
+        account.underlying_condition = underlying_condition
       }
       if (date_of_birth) {
-        account.date_of_birth = date_of_birth;
+        account.date_of_birth = date_of_birth
       }
       if (address) {
-        account.address = address;
+        account.address = address
       }
 
       if (!profile_image) {
         // if no image set as default
-        account.profile_image = default_profile_img;
+        account.profile_image = default_profile_img
       } else if (profile_image) {
         // if image
 
         // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
 
-        const image_name = `${account_Id}.jpg`;
+        const image_name = `${account_Id}.jpg`
 
         const images_Dir = path.join(
           __dirname,
           "../../../image/account-profile"
-        );
-        const image_Path = path.join(images_Dir, image_name);
+        )
+        const image_Path = path.join(images_Dir, image_name)
 
         // check if directory exits
         if (!fs.existsSync(images_Dir)) {
-          fs.mkdirSync(images_Dir, { recursive: true });
+          fs.mkdirSync(images_Dir, { recursive: true })
         }
 
         // save image
-        fs.writeFileSync(image_Path, profile_image);
+        fs.writeFileSync(image_Path, profile_image)
 
         const profile_image_path = `${req.protocol}://${req.get(
           "host"
-        )}/images/account-profile/${image_name}`;
+        )}/images/account-profile/${image_name}`
 
-        account.profile_image = profile_image_path;
+        account.profile_image = profile_image_path
       }
 
-      await account.save();
+      await account.save()
 
-      res.status(200).json(account);
+      res.status(200).json(account)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   soft_Delete_Account = async (req, res) => {
     try {
       // get id list
-      const { account_Ids } = req.body;
+      const { account_Ids } = req.body
 
       // if no ids
       if (
@@ -302,29 +302,29 @@ class user_Controller {
         !Array.isArray(account_Ids) ||
         account_Ids.length === 0
       ) {
-        return res.status(400).json({ error: "No IDs provided" });
+        return res.status(400).json({ error: "No IDs provided" })
       }
 
       // update
       const result = await User.updateMany(
         { _id: { $in: account_Ids } },
         { is_deleted: true }
-      );
+      )
 
       res.status(200).json({
         message: "Account soft deleted",
         modifiedCount: result.modifiedCount,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   restore_Deleted_Account = async (req, res) => {
     try {
       // get id list
-      const { account_Ids } = req.body;
+      const { account_Ids } = req.body
 
       // if no ids
       if (
@@ -332,29 +332,29 @@ class user_Controller {
         !Array.isArray(account_Ids) ||
         account_Ids.length === 0
       ) {
-        return res.status(400).json({ error: "No IDs provided" });
+        return res.status(400).json({ error: "No IDs provided" })
       }
 
       // update
       const result = await User.updateMany(
         { _id: { $in: account_Ids } },
         { is_deleted: false }
-      );
+      )
 
       res.status(200).json({
         message: "Account restored",
         modifiedCount: result.modifiedCount,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   perma_Delete_Account = async (req, res) => {
     try {
       // get id list
-      const { account_Ids } = req.body;
+      const { account_Ids } = req.body
 
       // if no ids
       if (
@@ -362,33 +362,33 @@ class user_Controller {
         !Array.isArray(account_Ids) ||
         account_Ids.length === 0
       ) {
-        return res.status(400).json({ error: "No IDs provided" });
+        return res.status(400).json({ error: "No IDs provided" })
       }
 
       // delete
-      const result = await User.deleteMany({ _id: { $in: account_Ids } });
+      const result = await User.deleteMany({ _id: { $in: account_Ids } })
 
       res.status(200).json({
         message: "Account deleted",
         modifiedCount: result.modifiedCount,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   forgot_password = async (req, res) => {
     try {
-      const { email } = req.body;
-      const account = await User.findOne({ email });
+      const { email } = req.body
+      const account = await User.findOne({ email })
 
       if (!account) {
-        return res.status(404).json({ error: "Account not found" });
+        return res.status(404).json({ error: "Account not found" })
       }
 
       // Generate a reset token
-      const reset_Token = this.create_Token(account._id, "10m");
+      const reset_Token = this.create_Token(account._id, "10m")
 
       const transporter = nodemailer.createTransport({
         service: process.env.EMAIL_HOST,
@@ -396,11 +396,11 @@ class user_Controller {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS,
         },
-      });
+      })
 
       const reset_URL = `${req.protocol}://${req.get(
         "host"
-      )}/acc/reset-password/${reset_Token}`;
+      )}/acc/reset-password/${reset_Token}`
       const mail_Options = {
         from: process.env.EMAIL,
         to: email,
@@ -410,77 +410,77 @@ class user_Controller {
                         <a href="${reset_URL}">Reset Password</a>
                         <p>This link will expire in 10 minutes</p>
                     `,
-      };
+      }
 
-      await transporter.sendMail(mail_Options);
+      await transporter.sendMail(mail_Options)
 
       res
         .status(200)
-        .json({ message: "Password reset link sent to your email" });
+        .json({ message: "Password reset link sent to your email" })
     } catch (error) {
-      console.log(error.message);
-      res.status(500).json({ error: error.message });
+      console.log(error.message)
+      res.status(500).json({ error: error.message })
     }
-  };
+  }
 
   reset_password = async (req, res) => {
     try {
-      const token = req.params.token;
+      const token = req.params.token
 
       // Verify the token
-      const decoded = jwt.verify(token, process.env.JWTSecret);
-      const user = await User.findById(decoded._id);
+      const decoded = jwt.verify(token, process.env.JWTSecret)
+      const user = await User.findById(decoded._id)
 
       if (!user) {
-        return res.status(400).json({ error: "Invalid or expired token" });
+        return res.status(400).json({ error: "Invalid or expired token" })
       }
 
       const updated_user = await User.change_pass(
         user.email,
         process.env.DEFAULT_PASS,
         true
-      );
+      )
 
       res.status(200).json({
         message: "Password changed successfully",
-      });
+      })
     } catch (error) {
       if (error.name === "TokenExpiredError") {
         return res.status(400).json({
           error: "Token has expired. Please request a new password reset.",
-        });
+        })
       }
-      res.status(400).json({ error: error.message });
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   change_password = async (req, res) => {
     try {
       // const {email} = req.user
-      const { email, new_password } = req.body;
-      const user = await User.change_pass(email, new_password);
+      const { email, new_password } = req.body
+      const user = await User.change_pass(email, new_password)
 
-      console.log(user);
-      res.status(200).json({ email, user });
+      console.log(user)
+      res.status(200).json({ email, user })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   update_Doctor_Info = async (req, res) => {
     try {
       // get info from body
-      const { speciality, region, bio } = req.body;
+      const { speciality, region, bio } = req.body
 
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       // find account
-      let account = await Doctor.findById(account_Id);
+      let account = await Doctor.findById(account_Id)
 
       if (!account) {
-        return res.status(404).json({ error: "Account not found" });
+        return res.status(404).json({ error: "Account not found" })
       }
 
       // update
@@ -488,61 +488,61 @@ class user_Controller {
         const speciality_id = await Speciality.findOne(
           { name: speciality },
           { _id: 1 }
-        );
-        account.speciality_id = speciality_id._id;
+        )
+        account.speciality_id = speciality_id._id
       }
 
       if (region) {
-        const region_id = await Region.findOne({ name: region }, { _id: 1 });
-        account.region_id = region_id._id;
+        const region_id = await Region.findOne({ name: region }, { _id: 1 })
+        account.region_id = region_id._id
       }
 
       if (bio) {
-        account.bio = bio;
+        account.bio = bio
       }
 
-      await account.save();
+      await account.save()
 
       account = await Doctor.findById(account_Id)
         .populate("speciality_id", "name")
-        .populate("region_id", "name");
+        .populate("region_id", "name")
 
-      res.status(200).json(account);
+      res.status(200).json(account)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   upload_Doctor_Proof = async (req, res) => {
     try {
-      await upload_Promise_pdf(req, res);
-      const proof = req.file ? req.file.buffer : null;
+      await upload_Promise_pdf(req, res)
+      const proof = req.file ? req.file.buffer : null
 
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       // update
       const account = await Doctor.findByIdAndUpdate(
         account_Id,
         { proof },
         { new: true }
-      );
+      )
 
-      res.status(200).json(account);
+      res.status(200).json(account)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   get_Doctor_Active_Hour_List = async (req, res) => {
     try {
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       // find doctor
-      const doctor = await Doctor.findById(account_Id);
+      const doctor = await Doctor.findById(account_Id)
 
       // find doctor existing appointments
       const appointments = await Appointment.aggregate([
@@ -562,20 +562,20 @@ class user_Controller {
             count: { $sum: 1 },
           },
         },
-      ]);
+      ])
 
       // time that are fully booked
-      let fully_Booked_Hour = [];
+      let fully_Booked_Hour = []
 
       // time that are not fully booked
-      let booked_Hour = [];
+      let booked_Hour = []
 
       // go through each appointment
       doctor.active_hours.forEach((active_Hour) => {
         // go through each active hour
         appointments.forEach((appointment) => {
           // day format: Day-of-Week specific-date
-          const day_Of_Week = appointment._id.appointment_day.split(" ")[0];
+          const day_Of_Week = appointment._id.appointment_day.split(" ")[0]
           if (
             active_Hour.day === day_Of_Week &&
             active_Hour.start_time === appointment._id.appointment_time_start &&
@@ -588,7 +588,7 @@ class user_Controller {
               end_time: active_Hour.end_time,
               appointment_count: appointment.count,
               appointment_limit: active_Hour.appointment_limit,
-            });
+            })
           } else if (
             active_Hour.day === day_Of_Week &&
             active_Hour.start_time === appointment._id.appointment_time_start &&
@@ -601,26 +601,26 @@ class user_Controller {
               end_time: active_Hour.end_time,
               appointment_count: appointment.count,
               appointment_limit: active_Hour.appointment_limit,
-            });
+            })
           }
-        });
-      });
+        })
+      })
 
       res.status(201).json({
         active_hours: doctor.active_hours,
         booked: booked_Hour,
         fully_booked: fully_Booked_Hour,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   add_Doctor_Active_Hour = async (req, res) => {
     try {
       const { day, start_time, end_time, hour_type, appointment_limit } =
-        req.body;
+        req.body
 
       if (
         !day ||
@@ -629,11 +629,11 @@ class user_Controller {
         !hour_type ||
         !appointment_limit
       ) {
-        throw new Error("Missing information");
+        throw new Error("Missing information")
       }
 
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       // check overlap
       const new_Active_Hour = {
@@ -642,15 +642,15 @@ class user_Controller {
         end_time,
         hour_type,
         appointment_limit,
-      };
+      }
 
       const is_overlap = await Doctor.Is_Time_Overlap(
         new_Active_Hour,
         account_Id
-      );
+      )
 
       if (is_overlap) {
-        throw new Error("Overlapping time frame");
+        throw new Error("Overlapping time frame")
       }
 
       // add
@@ -658,14 +658,14 @@ class user_Controller {
         account_Id,
         { $push: { active_hours: new_Active_Hour } },
         { new: true }
-      );
+      )
 
-      res.status(201).json(doctor.active_hours);
+      res.status(201).json(doctor.active_hours)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   update_Doctor_Active_Hour = async (req, res) => {
     try {
@@ -679,14 +679,14 @@ class user_Controller {
         old_start_time,
         old_end_time,
         old_hour_type,
-      } = req.body;
+      } = req.body
 
       if (!day || !start_time || !end_time || !hour_type) {
-        throw new Error("Missing information");
+        throw new Error("Missing information")
       }
 
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       // check overlap
       const excluded_time = {
@@ -694,27 +694,27 @@ class user_Controller {
         start_time: old_start_time,
         end_time: old_end_time,
         hour_type: old_hour_type,
-      };
+      }
       const new_Active_Hour = {
         day,
         start_time,
         end_time,
         hour_type,
         appointment_limit,
-      };
+      }
 
       const is_overlap = await Doctor.Is_Time_Overlap(
         new_Active_Hour,
         account_Id,
         excluded_time
-      );
+      )
 
       if (is_overlap) {
-        throw new Error("Overlapping time frame");
+        throw new Error("Overlapping time frame")
       }
 
       // find doctor
-      const doctor = await Doctor.findById(account_Id);
+      const doctor = await Doctor.findById(account_Id)
 
       // find old active hour
       const index = doctor.active_hours.findIndex(
@@ -723,36 +723,36 @@ class user_Controller {
           time_frame.start_time === old_start_time &&
           time_frame.end_time === old_end_time &&
           time_frame.hour_type === old_hour_type
-      );
+      )
 
       // update
-      doctor.active_hours[index] = new_Active_Hour;
+      doctor.active_hours[index] = new_Active_Hour
 
-      await doctor.save();
+      await doctor.save()
 
       res.status(200).json({
         change: doctor.active_hours[index],
         active_hours: doctor.active_hours,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   delete_Doctor_Active_Hour = async (req, res) => {
     try {
-      const { day, start_time, end_time, hour_type } = req.body;
+      const { day, start_time, end_time, hour_type } = req.body
 
       if (!day || !start_time || !end_time || !hour_type) {
-        throw new Error("Missing information");
+        throw new Error("Missing information")
       }
 
       // get id
-      const account_Id = req.params.id;
+      const account_Id = req.params.id
 
       // find doctor
-      const doctor = await Doctor.findById(account_Id);
+      const doctor = await Doctor.findById(account_Id)
 
       // find old active hour
       const index = doctor.active_hours.findIndex(
@@ -761,117 +761,137 @@ class user_Controller {
           time_frame.start_time === start_time &&
           time_frame.end_time === end_time &&
           time_frame.hour_type === hour_type
-      );
+      )
 
       //delete
-      doctor.active_hours.splice(index, 1);
-      await doctor.save();
+      doctor.active_hours.splice(index, 1)
+      await doctor.save()
 
       res.status(200).json({
         message: "Item deleted succesfully",
         active_hours: doctor.active_hours,
-      });
+      })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   get_Filtered_Doctor_List = async (req, res) => {
     try {
-      const { speciality, region } = req.body;
+      const { speciality, region } = req.body
 
-      let query = {};
+      let query = {}
 
       if (speciality) {
         const speciality_id = await Speciality.findOne(
           { name: speciality },
           { _id: 1 }
-        );
-        query.speciality_id = speciality_id._id;
+        )
+        query.speciality_id = speciality_id._id
       }
 
       if (region) {
-        const region_id = await Region.findOne({ name: region }, { _id: 1 });
-        query.region_id = region_id._id;
+        const region_id = await Region.findOne({ name: region }, { _id: 1 })
+        query.region_id = region_id._id
       }
 
-      const doctors = await Doctor.find(query);
+      const doctors = await Doctor.find(query)
 
-      res.status(200).json(doctors);
+      res.status(200).json(doctors)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   change_Doctor_Verified_Status = async (req, res) => {
     try {
-      const { email, verified } = req.body;
+      const { email, verified } = req.body
 
       const doctor = await Doctor.findOneAndUpdate(
         { email },
         { verified },
         { new: true }
-      );
+      )
 
-      res.status(200).json(doctor);
+      res.status(200).json(doctor)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   change_Account_Role = async (req, res) => {
     try {
-      const { email, role } = req.body;
+      const { email, role } = req.body
 
       const account = await User.findOneAndUpdate(
         { email },
         { role },
         { new: true }
-      );
+      )
 
-      res.status(200).json(account);
+      res.status(200).json(account)
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   search_Doctor_By_Name = async (req, res) => {
     try {
-      const { name } = req.body;
+      const { name } = req.body
 
       const doctors = await Doctor.find({
         name: { $regex: name, $options: "i" },
       })
         .populate("speciality_id", "name")
-        .populate("region_id", "name");
+        .populate("region_id", "name")
 
-      res.status(200).json(doctors);
+      res.status(200).json(doctors)
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      res.status(400).json({ error: error.message })
     }
-  };
+  }
 
   getProfileAdmin = async (req, res) => {
     try {
-      const adminEmail = req.user; 
+      const adminEmail = req.user 
       const adminData = await User.findOne({ email: adminEmail }).select(
         "-password"
-      );
+      )
 
       if (!adminData) {
-        return res.status(404).json({ error: "Admin profile not found" });
+        return res.status(404).json({ error: "Admin profile not found" })
       }
 
-      res.json({ success: true, adminData });
+      res.json({ success: true, adminData })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
+    }
+  }
+
+  doctorProfile = async (req, res) => {
+    try {
+      
+      const doctorEmail = req.user;
+      
+      const profileData = await Doctor.findOne({ email: doctorEmail }).select(
+        "-password"
+      ).populate("speciality_id", "name").populate("region_id", "name"); 
+  
+      if (!profileData) {
+        return res.status(404).json({ success: false, message: "Doctor not found" });
+      }
+  
+      res.json({ success: true, profileData });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: "Server error" }); 
     }
   };
 }
 
-module.exports = new user_Controller();
+module.exports = new user_Controller()

@@ -132,7 +132,6 @@ update_Appointment_Info = async (req, res) => {
         appointment_time_end
       );
 
-      console.log(appointment_time_start, appointment_time_end)
 
       const appointment = await Appointment.findByIdAndUpdate(
         appointment_id,
@@ -312,6 +311,7 @@ get_Appointments_By_Doctor = async(req, res) =>{
   try{
       const {is_deleted} = req.body
       const doctor_id = req.params.id
+      
 
       let query = {doctor_id}
 
@@ -319,7 +319,8 @@ get_Appointments_By_Doctor = async(req, res) =>{
           query.is_deleted = is_deleted
       }
 
-      const appointment = await Appointment.find(query)
+      const appointment = await Appointment.find(query).populate('user_id', 'username date_of_birth profile_image')
+      
 
       res.status(200).json(appointment)
 
