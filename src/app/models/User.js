@@ -32,6 +32,14 @@ const User = new Schema({
         type: String,
         default: 'none' 
     },
+    date_of_birth: {
+        type: Date,
+        default: Date.now 
+    },
+    address: {
+        type: String,
+        default: 'none' 
+    },
     is_deleted: {
         type: Boolean,
         default: false
@@ -92,27 +100,36 @@ User.statics.login = async function(email, password){
     return user
 }
 // change password
-User.statics.change_pass = async function(email, password){
+User.statics.change_pass = async function(email, password, is_reset = false) {
+    const user = await this.findOne({ email });
 
-    const user = await this.findOne({email})
-
-    // if(!validator.isStrongPassword(password)){
-    //     throw new Error("Password not strong enough!")
-    // }
-
-    const match = await bcrypt.compare(password, user.password)
-
-    if(match){
-        throw new Error('New password must be different from the old one')
+    if (!user) {
+        throw new Error('User not found');
     }
 
-    //hassing password
-    const salt = await bcrypt.genSalt(10)
-    const hass = await bcrypt.hash(password, salt)
+    // If not a password reset, check if the new password matches the old password
+    let match = false;
+    if (!is_reset) {
+        match = await bcrypt.compare(password, user.password);
+    }
 
-    const updated_user = await this.findOneAndUpdate({email}, {password: hass}, {new: true})
+    if (match) {
+        throw new Error('New password must be different from the old one');
+    }
 
-    return updated_user
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Update the user's password
+    const updated_user = await this.findOneAndUpdate(
+        { email },
+        { password: hashedPassword },
+        { new: true }
+    );
+
+    return updated_user;
 }
+
 
 module.exports = mongoose.model('User', User)

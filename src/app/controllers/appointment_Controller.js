@@ -4,7 +4,7 @@ class appointment_Controller {
     add_Appointment = async(req, res) =>{
         try{
             const {
-                client_id,
+                user_id,
                 doctor_id,
                 appointment_day,
                 appointment_time_start,
@@ -13,7 +13,7 @@ class appointment_Controller {
                 type_service
             } = req.body
 
-            if(!client_id || !doctor_id 
+            if(!user_id || !doctor_id 
                 || !appointment_day 
                 || !appointment_time_start 
                 || !appointment_time_end
@@ -22,7 +22,7 @@ class appointment_Controller {
             }
 
             const appointment = await Appointment.create({
-                client_id,
+                user_id,
                 doctor_id,
                 appointment_day,
                 appointment_time_start,
@@ -85,6 +85,94 @@ class appointment_Controller {
 
             res.status(200).json({message: "Appointment is cancelled"})
 
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    add_Insurance = async(req, res) =>{
+        try{
+            const appointment_id = req.params.id
+            const {name, number, location, exp_date} = req.body
+            const new_Insurance = {name, number, location, exp_date}
+            const appointment = await Appointment.findByIdAndUpdate(
+                appointment_id,
+                {$push: {insurance: new_Insurance}},
+                {new: true}
+            )
+            res.status(201).json(appointment.insurance)
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+    delete_Insurance = async(req, res) =>{
+        try{
+            const {appointment_id, insurance_id} = req.body
+            const appointment = await Appointment.findById(appointment_id)
+            appointment.insurance.pull({_id: insurance_id})
+            await client.save()
+            
+            res.status(201).json(appointment.insurance)
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+    update_Insurance = async(req, res) =>{
+        try {
+            const {appointment_id, insurance_id, name, number, location, exp_date} = req.body
+            const appointment = await Appointment.findById(appointment_id)
+            const insurance = await Appointment.insurance.id(insurance_id)
+            insurance.name = name
+            insurance.number = number
+            insurance.location = location
+            insurance.exp_date = exp_date
+            await appointment.save()
+            
+            res.status(200).json(appointment)
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+    get_All_Appointment = async(req, res) =>{
+        try{
+            const {is_deleted} = req.body
+            let query = {}
+            if(is_deleted !== undefined){
+                query.is_deleted = is_deleted
+            }
+            const appointments = await Appointment.find(query)
+            res.status(200).json(appointments)
+        }catch(error){
+            res.status(400).json({error: error.message})
+        }
+    }
+    get_Appointment_By_User_Id = async (req, res) => {
+        try {
+            const { is_deleted } = req.body;
+            const user_id = req.params.id;
+    
+            // Tạo truy vấn dựa trên các điều kiện
+            let query = { user_id };
+            if (is_deleted !== undefined) {
+                query.is_deleted = is_deleted;
+            }
+    
+            // Tìm tất cả các cuộc hẹn phù hợp
+            const appointments = await Appointment.find(query).populate('user_id', 'username').populate('doctor_id','username');
+    
+            res.status(200).json(appointments);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    };
+    
+    get_Appointment_Insurance = async (req, res) => {
+        try {
+            const appointment_id = req.params.id
+            
+            const appointment = await Appointment.findById(appointment_id, 'insurance')
+            
+            res.status(200).json(appointment.insurance)
         }catch(error){
             res.status(400).json({error: error.message})
         }

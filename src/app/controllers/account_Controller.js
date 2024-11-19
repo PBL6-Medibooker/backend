@@ -3,6 +3,9 @@ const Doctor = require('../models/Doctor')
 const Region = require('../models/Region')
 const Speciality = require('../models/Speciality')
 
+const crypto = require('crypto')
+const nodemailer = require('nodemailer')
+
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
@@ -37,8 +40,8 @@ const upload_Promise_pdf = promisify(upload_pdf)
 const upload_Promise_img = promisify(upload_img)
 
 class user_Controller{
-    create_Token = (_id) => {
-        return jwt.sign({_id}, process.env.JWTSecret, {expiresIn: '1d'})
+    create_Token = (_id, expiresIn = '1d') => {
+        return jwt.sign({_id}, process.env.JWTSecret, {expiresIn})
     }
 
     acc_Login = async(req, res) => {
@@ -117,7 +120,7 @@ class user_Controller{
                     query.verified = verified
                 }
             
-                accounts = await Doctor.find(query)
+                accounts = await Doctor.find(query).populate('speciality_id', 'name');
             }
 
             const accounts_With_Png_Images = accounts.map((account) => {
@@ -139,12 +142,33 @@ class user_Controller{
         }
     }
 
-    get_Account = async(req, res) =>{
+    isDoctor = async (accountId) => {
+        try {
+            // Tìm tài khoản theo ID
+            const account = await User.findById(accountId);
+    
+            if (!account) {
+                throw new Error('Account not found');
+            }
+    
+            // Kiểm tra nếu tài khoản thuộc loại Doctor
+            if (account instanceof Doctor) {
+                return true; // Là tài khoản Doctor
+            }
+    
+            return false; // Là tài khoản User
+        } catch (error) {
+            console.error(error.message);
+            throw new Error('Error checking account type');
+        }
+    };    
+
+    get_Account_By_Mail = async(req, res) =>{
         try{
             // get id
             const {email}= req.body
 
-            let account = await User.findOne({email})
+            let account = await User.findOne({email}).populate('speciality_id', 'name').populate('region_id','name');
             
             const accountObject = account.toObject();
 
@@ -161,48 +185,102 @@ class user_Controller{
         }
     }
 
-    update_Acc_Info = async(req, res) =>{
+    get_Account_By_Id = async(req, res) =>{
         try{
-            // wait for file upload
-            await upload_Promise_img(req, res)
-
-            // get info from body
-            const {username, phone, underlying_condition} = req.body
-            const profile_image = req.file ? req.file.buffer : null
-
             // get id
             const account_Id = req.params.id
-
-            // find account
-            let account = await User.findById(account_Id)
-
-            if(!account){
-                return res.status(404).json({error: 'Account not found'})
+            let account = await User.findById(account_Id).populate('speciality_id', 'name');
+            
+            const accountObject = account.toObject();
+            // Convert profile image buffer to base64 if it exists
+            if (accountObject.profile_image && Buffer.isBuffer(accountObject.profile_image)) {
+                accountObject.profile_image = `data:image/png;base64,${accountObject.profile_image.toString('base64')}`
             }
-
-            // update
-            if(username){
-                account.username = username
-            }
-            if(phone){
-                account.phone = phone
-            }
-            if(underlying_condition){
-                account.underlying_condition = underlying_condition
-            }
-            if(profile_image){
-                account.profile_image = profile_image
-            }
-
-            await account.save()
-
-            res.status(200).json(account)
-
+            res.status(200).json(accountObject)
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})
         }
     }
+
+    change_Doctor_Verified_Status = async(req, res) =>{
+        try{
+            const {email, verified} = req.body
+            const doctor = await Doctor.findOneAndUpdate(
+                {email}, 
+                {verified},
+                {new: true}
+            )
+            res.status(200).json(doctor)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+    change_Account_Role = async(req, res) =>{
+        try{
+            const {email, role} = req.body
+            const account = await User.findOneAndUpdate(
+                {email}, 
+                {role},
+                {new: true}
+            )
+            res.status(200).json(account)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }
+
+    update_Acc_Info = async (req, res) => {
+        try {
+            // Chờ tải file
+            await upload_Promise_img(req, res);
+    
+            // Lấy thông tin từ body
+            const { username, phone, underlying_condition, date_of_birth, address } = req.body;
+            const profile_image = req.file ? req.file.buffer : null;
+    
+            // Lấy ID
+            const account_Id = req.params.id;
+    
+            // Tìm tài khoản
+            let account = await User.findById(account_Id);
+    
+            if (!account) {
+                return res.status(404).json({ error: 'Account not found' });
+            }
+    
+            // Cập nhật thông tin
+            if (username) {
+                account.username = username;
+            }
+            if (phone) {
+                account.phone = phone;
+            }
+            if (underlying_condition) {
+                account.underlying_condition = underlying_condition;
+            }
+            if (profile_image !== null) { // Chỉ cập nhật profile_image nếu có file mới được tải lên
+                account.profile_image = profile_image;
+            }
+            if (date_of_birth) {
+                account.date_of_birth = date_of_birth;
+            }
+            if (address) {
+                account.address = address;
+            }
+    
+            // Lưu thay đổi
+            await account.save();
+    
+            res.status(200).json(account);
+        } catch (error) {
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
+        }
+    };
+    
 
     soft_Delete_Account = async(req, res) =>{
         try{
@@ -284,6 +362,72 @@ class user_Controller{
         }
     }
 
+    forgot_password = async(req, res) =>{
+        try {
+            const {email} = req.body
+            const account = await User.findOne({email})
+            
+            if(!account){
+                return res.status(404).json({error: 'Account not found'})
+            }
+    
+            // Generate a reset token
+            const reset_Token = this.create_Token(account._id, '10m')
+            
+            const transporter = nodemailer.createTransport({
+                service: process.env.EMAIL_HOST,
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            })
+    
+            const reset_URL = `${req.protocol}://${req.get('host')}/acc/reset-password/${reset_Token}`
+            const mail_Options = {
+                from: process.env.EMAIL,
+                to: email,
+                subject: 'Password Reset',
+                html: `
+                        <p>Please click on the following link to reset your password:</p>
+                        <a href="${reset_URL}">Reset Password</a>
+                        <p>This link will expire in 10 minutes</p>
+                    `
+            }
+    
+            await transporter.sendMail(mail_Options)
+    
+            res.status(200).json({message: 'Password reset link sent to your email'})
+        } catch (error) {
+            console.log(error.message);
+            res.status(500).json({ error: error.message })
+        }
+    }
+    reset_password = async(req, res) =>{
+        try {
+            const token = req.params.token
+    
+            // Verify the token
+            const decoded = jwt.verify(token, process.env.JWTSecret)
+            const user = await User.findById(decoded._id)
+    
+            if (!user) {
+                return res.status(400).json({error: 'Invalid or expired token'})
+            }
+            
+            const updated_user = await User.change_pass(user.email, process.env.DEFAULT_PASS, true)
+    
+            res.status(200).json({
+                message: 'Password changed successfully'
+            })
+        } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                return res.status(400).json({error: 'Token has expired. Please request a new password reset.'})
+            }
+            res.status(400).json({error: error.message})
+        }
+    }
+
+
     change_password = async(req, res) =>{
         try{
             // const {email} = req.user
@@ -310,9 +454,12 @@ class user_Controller{
             // find account
             let account = await Doctor.findById(account_Id)
 
+            
+
             if(!account){
                 return res.status(404).json({error: 'Account not found'})
             }
+
 
             // update
             if(speciality){
@@ -516,7 +663,7 @@ class user_Controller{
                 query.region_id = region_id._id
             }
 
-            const doctors = await Doctor.find(query)
+            const doctors = await Doctor.find(query).populate('speciality_id', 'name');
 
             res.status(200).json(doctors)
         }catch(error){
@@ -524,6 +671,23 @@ class user_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    check_Account_Type = async (req, res) => {
+        try {
+            const { _id } = req.body;
+    
+            const isDoctorAccount = await this.isDoctor(_id);
+    
+            if (isDoctorAccount) {
+                res.status(200).json({ role: 'Doctor' });
+            } else {
+                res.status(200).json({ role: 'User' });
+            }
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    };
+    
     
 }
 

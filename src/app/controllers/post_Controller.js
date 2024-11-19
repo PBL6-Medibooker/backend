@@ -24,7 +24,7 @@ class post_Controller{
                 post_content
             })
 
-            res.status(201).json(post)
+            res.status(200).json(post)
         }catch(error){
             res.status(400).json({error: error.message})
         }
@@ -35,7 +35,7 @@ class post_Controller{
             const post_id = req.params.id
 
             const post = await Post.findById(post_id)
-                .populate('user_id', 'email')
+                .populate('user_id', 'email profile_image')
                 .populate('speciality_id', 'name')
 
             res.status(200).json(post)
@@ -69,7 +69,7 @@ class post_Controller{
             }
             
             const posts = await Post.find({speciality_id: speciality._id})
-                .populate('user_id', 'email')
+                .populate('user_id', 'email profile_image')
                 .populate('speciality_id', 'name')
 
             res.status(200).json(posts)
@@ -81,7 +81,7 @@ class post_Controller{
     get_All_Post = async(req, res) =>{
         try{
             const posts = await Post.find()
-                .populate('user_id', 'email')
+                .populate('user_id', 'email profile_image')
                 .populate('speciality_id', 'name')
 
             res.status(200).json(posts)

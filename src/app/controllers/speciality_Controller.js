@@ -29,7 +29,7 @@ class speciality_Controller{
             const {name, description} = req.body
             const speciality_image = req.file ? req.file.buffer : null
 
-            const exists_spec = await Speciality.findOne(name)
+            const exists_spec = await Speciality.findOne({name})
 
             if(exists_spec){
                 throw new Error('Speciality already exits')
@@ -42,6 +42,26 @@ class speciality_Controller{
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})
+        }
+    }
+    
+    get_Speciality_By_ID = async (req, res) => {
+        try {
+            // Get _id from req.body
+            const id = req.params.id;
+
+            // Find speciality by ID
+            const speciality = await Speciality.findById(id);
+
+            // If not found
+            if (!speciality) {
+                return res.status(404).json({error: 'Speciality not found'});
+            }
+
+            res.status(200).json(speciality);
+        } catch (error) {
+            console.log(error.message);
+            res.status(400).json({error: error.message});
         }
     }
 
@@ -57,18 +77,18 @@ class speciality_Controller{
                 specialities = await Speciality.find({is_deleted: false})
             }
             
-            const specialities_With_Png_Images = specialities.map((speciality) => {
-                const specialityObject = speciality.toObject()
+            // const specialities_With_Png_Images = specialities.map((speciality) => {
+            //     const specialityObject = speciality.toObject()
     
-                if (specialityObject.speciality_image && Buffer.isBuffer(specialityObject.speciality_image)) {
-                    // Convert buffer directly to base64 string
-                    specialityObject.speciality_image = `data:image/png;base64,${specialityObject.speciality_image.toString('base64')}`
-                }
+            //     if (specialityObject.speciality_image && Buffer.isBuffer(specialityObject.speciality_image)) {
+            //         // Convert buffer directly to base64 string
+            //         specialityObject.speciality_image = `data:image/png;base64,${specialityObject.speciality_image.toString('base64')}`
+            //     }
     
-                return specialityObject
-            })
+            //     return specialityObject
+            // })
     
-            res.status(200).json(specialities_With_Png_Images)
+            res.status(200).json(specialities)
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})

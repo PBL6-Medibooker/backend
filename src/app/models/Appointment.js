@@ -5,9 +5,9 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const Appointment = Schema({
-    client_id: { 
+    user_id: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Client', 
+        ref: 'User', 
         required: true 
     },
     doctor_id: { 
@@ -15,6 +15,12 @@ const Appointment = Schema({
         ref: 'Doctor', 
         required: true 
     },
+    insurance:[{ 
+        name: String,
+        number: String,
+        location: String,
+        exp_date: String
+    }], 
     appointment_day: { 
         type: String, 
         required: true 
@@ -38,6 +44,7 @@ const Appointment = Schema({
         type: Boolean, 
         default: false 
     }
-})
+}, { timestamps: true })
+Appointment.path('insurance').default(() => [])
 
 module.exports = mongoose.model('Appointment', Appointment)

@@ -11,6 +11,9 @@ router.post('/get-all-article-by-speciality', article_Controller.get_all_Article
 router.post('/update-article/:id', article_Controller.update_Article)
 router.post('/soft-del-article', article_Controller.soft_Delete_Article)
 router.post('/restore-article', article_Controller.restore_Article)
-router.post('/perma-del-article', article_Controller.soft_Delete_Article)
+router.post('/perma-del-article', article_Controller.perma_Delete_Article)
+router.post('/add-comment/:id', article_Controller.add_Comment)
+router.post('/:article_id/comment/:comment_id/update', article_Controller.update_Comment)
+router.post('/:article_id/comment/:comment_id/del', article_Controller.del_Comment)
 
 module.exports = router
