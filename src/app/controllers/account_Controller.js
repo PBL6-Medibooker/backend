@@ -3,16 +3,16 @@ const Doctor = require('../models/Doctor')
 const Region = require('../models/Region')
 const Speciality = require('../models/Speciality')
 const Appointment = require('../models/Appointment')
+const cloudinary = require('../utils/cloudinary')
 
-const crypto = require('crypto')
-const nodemailer = require('nodemailer')
 
+// const fs = require('fs')
+// const path = require('path')
+// const mime = require('mime-types')
+// const crypto = require('crypto')
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
-const fs = require('fs')
-const path = require('path')
-const mime = require('mime-types')
 const nodemailer = require('nodemailer')
 const mongoose = require('mongoose')
 
@@ -239,25 +239,21 @@ class account_Controller{
             if(!profile_image){ // if no image set as default 
                 account.profile_image = default_profile_img
             }else if(profile_image){ // if image
+                
+                const image_name = `${account_Id}_${Date.now()}`
 
-                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+                // Promisify Cloudinary upload stream
+                const upload_Stream = promisify(cloudinary.uploader.upload_stream)
 
-                const image_name =  `${account_Id}.jpg`
+                // Upload image to Cloudinary
+                const upload_Result = await upload_Stream({
+                    folder: 'PBL6/profiles/', // Cloudinary folder for profiles
+                    public_id: image_name, // Custom public_id (name) for the image
+                    overwrite: true, // Overwrite any existing file with the same name
+                    format: 'jpg', // Ensure the uploaded file is in jpg format
+                })
 
-                const images_Dir = path.join(__dirname, '../../../image/account-profile')
-                const image_Path = path.join(images_Dir, image_name)
-
-                // check if directory exits
-                if (!fs.existsSync(images_Dir)) {
-                    fs.mkdirSync(images_Dir, {recursive: true})
-                }
-
-                // save image
-                fs.writeFileSync(image_Path, profile_image)
-
-                const profile_image_path = `${req.protocol}://${req.get('host')}/images/account-profile/${image_name}`
-
-                account.profile_image = profile_image_path
+                account.profile_image = upload_Result.secure_url
             }
             
             await account.save()
@@ -330,7 +326,32 @@ class account_Controller{
 
             // if no ids
             if (!account_Ids || !Array.isArray(account_Ids) || account_Ids.length === 0) {
-                return res.status(400).json({error: 'No IDs provided'});
+                return res.status(400).json({error: 'No IDs provided'})
+            }
+
+            // Find the accounts to delete and retrieve their profile image public_ids
+            const accounts = await User.find({ _id: { $in: account_Ids } }, 'profile_image')
+
+            // Prepare an array of public_ids to delete from Cloudinary
+            const public_Ids = accounts.map(account => {
+                const image_Url = account.profile_image
+                const url_Parts = image_Url.split('/')
+                const public_Id = url_Parts.slice(-3).join('/')// Extract public_id from URL
+                return public_Id
+            })
+
+            // Delete images from Cloudinary
+            if (public_Ids.length > 0) {
+                const cloudinary_Delete_Promises = public_Ids.map(public_Id => {
+                    return new Promise((resolve, reject) => {
+                        cloudinary.uploader.destroy(public_Id, (error, result) => {
+                            if (error) return reject(error)
+                            resolve(result)
+                        })
+                    })
+                })
+
+                await Promise.all(cloudinary_Delete_Promises) // Wait for all deletions to complete
             }
 
             // delete
@@ -729,7 +750,6 @@ class account_Controller{
             res.status(400).json({error: error.message})
         }
     }
-
 
     change_Doctor_Verified_Status = async(req, res) =>{
         try{
