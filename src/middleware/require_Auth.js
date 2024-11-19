@@ -80,6 +80,7 @@ require("dotenv").config()
                 return res.status(404).json({error: "Request not authorized"})
             }
         }
-    }
-    
-    module.exports = new requireAuth
+    }    
+
+module.exports = new requireAuth()
+

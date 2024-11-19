@@ -13,13 +13,9 @@ const Article = new Schema({
         type: String, 
         required: true 
     },
-    article_description: { 
-        type: String, 
-        required: true 
-    },
     article_image: { 
-        type: Buffer, 
-        required: true 
+        type: String, 
+        default: null 
     },
     article_content: { 
         type: String, 
@@ -29,19 +25,6 @@ const Article = new Schema({
         type: Date, 
         default: Date.now 
     },
-    article_comments: [{ 
-        replier: {
-            type: mongoose.Schema.Types.ObjectId, 
-            ref: 'User'
-        },
-        comment_content: String,
-        date_published: { 
-            type: Date, 
-            default: Date.now 
-        },
-        // like: {type: Number, default: 0},
-        // dislike: {type: Number, default: 0}
-    }],
     is_deleted: { 
         type: Boolean, 
         default: false 

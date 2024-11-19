@@ -3,6 +3,10 @@ const validator = require('validator')
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
+require('dotenv').config()
+
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+
 const User = new Schema({
     email: {
         type: String,
@@ -25,7 +29,7 @@ const User = new Schema({
         default: 'user'
     },
     profile_image: { 
-        type: Buffer,
+        type: String,
         default: null
     },
     underlying_condition: {
@@ -74,7 +78,12 @@ User.statics.add_User = async function(email, password, username, phone) {
     const salt = await bcrypt.genSalt(10)
     const hass = await bcrypt.hash(password, salt)
 
-    const user = await this.create({email, password: hass, username, phone})
+    const user = await this.create({
+        email, 
+        password: hass, 
+        username, 
+        phone, 
+        profile_image: default_profile_img})
 
     return user
 }
@@ -100,35 +109,31 @@ User.statics.login = async function(email, password){
     return user
 }
 // change password
-User.statics.change_pass = async function(email, password, is_reset = false) {
-    const user = await this.findOne({ email });
+User.statics.change_pass = async function(email, password, is_reset = false){
 
-    if (!user) {
-        throw new Error('User not found');
+    const user = await this.findOne({email})
+
+    // if(!validator.isStrongPassword(password)){
+    //     throw new Error("Password not strong enough!")
+    // }
+
+    let match = false
+
+    if(!is_reset){
+        match = await bcrypt.compare(password, user.password)
     }
 
-    // If not a password reset, check if the new password matches the old password
-    let match = false;
-    if (!is_reset) {
-        match = await bcrypt.compare(password, user.password);
+    if(match){
+        throw new Error('New password must be different from the old one')
     }
 
-    if (match) {
-        throw new Error('New password must be different from the old one');
-    }
+    //hassing password
+    const salt = await bcrypt.genSalt(10)
+    const hass = await bcrypt.hash(password, salt)
 
-    // Hash the new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const updated_user = await this.findOneAndUpdate({email}, {password: hass}, {new: true})
 
-    // Update the user's password
-    const updated_user = await this.findOneAndUpdate(
-        { email },
-        { password: hashedPassword },
-        { new: true }
-    );
-
-    return updated_user;
+    return updated_user
 }
 
 

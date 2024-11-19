@@ -13,11 +13,11 @@ function routes(app){
     app.use('/acc', account_Routes)
     app.use('/special', speciality_Routes)
     app.use('/region', region_Routes)
-    //app.use('/client', client_Routes)
+    // app.use('/client', client_Routes)
     app.use('/appointment', appointment_Routes)
     app.use('/article', article_Routes)
     app.use('/post', post_Routes)
-    app.use('/images', express.static(path.join(__dirname, '../../../image')))
+    app.use('/images', express.static(path.join(__dirname, '../../image')))
 }
 
 module.exports = routes

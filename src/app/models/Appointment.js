@@ -45,6 +45,7 @@ const Appointment = Schema({
         default: false 
     }
 }, { timestamps: true })
+
 Appointment.path('insurance').default(() => [])
 
 module.exports = mongoose.model('Appointment', Appointment)

@@ -10,37 +10,43 @@ const bcrypt = require('bcrypt')
 const validator = require('validator')
 
 const mongoose = require('mongoose')
+const Appointment = require('./Appointment')
 const Schema = mongoose.Schema
 
+require("dotenv").config()
+
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+
 const Doctor_Schema = new Schema({
-    speciality_id: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Speciality', 
-        required: false 
-    },
-    verified:{
-        type: Boolean,
-        default: false
-    },
-    active_hours: [{
-        day: String, // days of week
-        start_time: String, // hours:minutes
-        end_time: String, // hours:minutes
-        hour_type: String // working or appointment
-    }],
-    bio: {
-        type: String,
-        default: 'undisclosed'
-    },
-    region_id: {
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Region', 
-        required: false 
-    },
-    proof: {
-        type: Buffer,
-        required: false
-    }
+  speciality_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Speciality',
+    required: false,
+  },
+  verified:{
+      type: Boolean,
+      default: false
+  },
+  active_hours: [{
+      day: String, // days of week
+      start_time: String, // hours:minutes
+      end_time: String, // hours:minutes
+      hour_type: String, // working or appointment
+      appointment_limit: Number // limit the number of appointments in the time frame
+  }],
+  bio: {
+      type: String,
+      default: 'undisclosed'
+  },
+  region_id: {
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Region', 
+      required: false 
+  },
+  proof: {
+      type: Buffer,
+      required: false
+  }
 })
 
 Doctor_Schema.path('active_hours').default(() => [])
@@ -73,7 +79,13 @@ Doctor_Schema.statics.add_Doctor = async function(email, password, username, pho
     const salt = await bcrypt.genSalt(10)
     const hass = await bcrypt.hash(password, salt)
 
-    const doctor = await this.create({email, password: hass, username, phone, proof})
+    const doctor = await this.create({
+        email, 
+        password: hass, 
+        username, 
+        phone, 
+        proof, 
+        profile_image: default_profile_img})
 
     return doctor
 }
@@ -127,6 +139,6 @@ Doctor_Schema.statics.Is_Time_Overlap = async function(new_time, account_Id, exc
     return false
 }
 
-const Doctor = User.discriminator('Doctor', Doctor_Schema)
+const Doctor = User.discriminator("Doctor", Doctor_Schema)
 
 module.exports = Doctor
