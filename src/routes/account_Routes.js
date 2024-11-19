@@ -52,5 +52,10 @@ router.get(
   account_Controller.doctorProfile
 )
 
+router.get(
+  "/top-doctor",
+  account_Controller.getTopDoctors
+)
+
 
 module.exports = router

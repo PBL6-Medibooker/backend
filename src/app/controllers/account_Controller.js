@@ -892,6 +892,56 @@ class user_Controller {
       res.status(500).json({ success: false, message: "Server error" }); 
     }
   };
+
+  getTopDoctors = async (req, res) => {
+    try {
+      const result = await Appointment.aggregate([
+        {
+          
+          $group: {
+            _id: "$doctor_id", // Group by doctor_id
+            appointmentCount: { $sum: 1 }, // Count the appointments
+          },
+        },
+        {
+          $sort: { appointmentCount: -1 },
+        },
+        {
+         
+          $limit: 5,
+        },
+        {
+        
+          $lookup: {
+            from: "users", 
+            localField: "_id",
+            foreignField: "_id",
+            as: "doctorDetails",
+          },
+        },
+        {
+        
+          $project: {
+            doctorId: "$_id",
+            appointmentCount: 1,
+            doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
+          },
+        },
+      ]);
+  
+      if (!result.length) {
+        return res.status(404).json({ message: "No appointments found." });
+      }
+  
+      return res.status(200).json({ data: result });
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({
+        error: "An error occurred.",
+      });
+    }
+  };
+  
 }
 
 module.exports = new user_Controller()
