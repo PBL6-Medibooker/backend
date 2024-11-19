@@ -15,7 +15,7 @@ const Article = new Schema({
     },
     article_image: { 
         type: String, 
-        required: true 
+        default: null 
     },
     article_content: { 
         type: String, 
