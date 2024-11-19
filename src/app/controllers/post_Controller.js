@@ -66,7 +66,8 @@ class post_Controller{
     get_all_Post_by_Speciality = async(req, res) =>{
         try{
             const {speciality_name} = req.body
-
+           
+     
             const speciality = await Speciality.findOne({name: speciality_name}, {_id: 1})
             if (!speciality) {
                 return res.status(404).json({error: 'Speciality not found'})
@@ -85,6 +86,7 @@ class post_Controller{
 
     get_All_Post = async(req, res) =>{
         try{
+            
             const posts = await Post.find()
                 .populate('user_id', 'email username __t')
                 .populate('speciality_id', 'name')

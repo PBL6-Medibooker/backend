@@ -43,6 +43,7 @@ const upload_img = multer({
 const upload_Promise_pdf = promisify(upload_pdf)
 const upload_Promise_img = promisify(upload_img)
 
+
 class account_Controller{
     create_Token = (_id, expiresIn = '1d') => {
         return jwt.sign({_id}, process.env.JWTSecret, {expiresIn})
@@ -190,7 +191,7 @@ class account_Controller{
             // }
 
             res.status(200).json(account)
-
+          
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})
@@ -320,6 +321,7 @@ class account_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
 
     perma_Delete_Account = async(req, res) =>{
         try{
@@ -775,6 +777,94 @@ class account_Controller{
             res.status(400).json({ error: error.message })
         }
     }
+    
+  getProfileAdmin = async (req, res) => {
+    try {
+      const adminEmail = req.user 
+      const adminData = await User.findOne({ email: adminEmail }).select(
+        "-password"
+      )
+
+      if (!adminData) {
+        return res.status(404).json({ error: "Admin profile not found" })
+      }
+
+      res.json({ success: true, adminData })
+    } catch (error) {
+      console.log(error.message)
+      res.status(400).json({ error: error.message })
+    }
+  }
+
+  doctorProfile = async (req, res) => {
+    try {
+      
+      const doctorEmail = req.user;
+      
+      const profileData = await Doctor.findOne({ email: doctorEmail }).select(
+        "-password"
+      ).populate("speciality_id", "name").populate("region_id", "name"); 
+  
+      if (!profileData) {
+        return res.status(404).json({ success: false, message: "Doctor not found" });
+      }
+  
+      res.json({ success: true, profileData });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: "Server error" }); 
+    }
+  };
+
+  getTopDoctors = async (req, res) => {
+    try {
+      const result = await Appointment.aggregate([
+        {
+          
+          $group: {
+            _id: "$doctor_id", // Group by doctor_id
+            appointmentCount: { $sum: 1 }, // Count the appointments
+          },
+        },
+        {
+          $sort: { appointmentCount: -1 },
+        },
+        {
+         
+          $limit: 5,
+        },
+        {
+        
+          $lookup: {
+            from: "users", 
+            localField: "_id",
+            foreignField: "_id",
+            as: "doctorDetails",
+          },
+        },
+        {
+        
+          $project: {
+            doctorId: "$_id",
+            appointmentCount: 1,
+            doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
+          },
+        },
+      ]);
+  
+      if (!result.length) {
+        return res.status(404).json({ message: "No appointments found." });
+      }
+  
+      return res.status(200).json({ data: result });
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({
+        error: "An error occurred.",
+      });
+    }
+  };
+  
 }
 
 module.exports = new account_Controller

@@ -39,6 +39,7 @@ class client_Controller {
 
   add_Insurance = async (req, res) => {
     try {
+
       const client_id = req.params.id;
       const { name, number, location, exp_date } = req.body
 
@@ -70,7 +71,7 @@ class client_Controller {
     } catch (error) {
       res.status(400).json({error: error.message})
     }
-  };
+  }
 
   update_Insurance = async (req, res) => {
     try {
@@ -96,6 +97,7 @@ class client_Controller {
   get_All_Client = async (req, res) => {
     try {
       const {is_deleted} = req.body
+
       let query = {}
 
       if (is_deleted !== undefined) {
@@ -166,6 +168,7 @@ class client_Controller {
       const client_id = req.params.id
 
       const appointment = await Appointment.deleteMany({client_id})
+      
       const client = await Client.findByIdAndDelete(client_id)
 
       res.status(200).json({

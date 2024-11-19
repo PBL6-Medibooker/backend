@@ -4,7 +4,7 @@ const User = require('../models/User')
 const mongoose = require('mongoose')
 
 class appointment_Controller {
-
+  
     check_Appointment_time = async(doctor_id, appointment_day, appointment_time_start, appointment_time_end) =>{
         const existing_appointments = await Appointment.find({
             doctor_id,
@@ -321,6 +321,9 @@ class appointment_Controller {
             }
 
             const appointment = await Appointment.find(query)
+            .populate('user_id', 'username date_of_birth profile_image')
+            .populate('doctor_id', 'username')
+
 
             res.status(200).json(appointment)
 

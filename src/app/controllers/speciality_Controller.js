@@ -12,6 +12,7 @@ const Doctor = require('../models/Doctor')
 
 require('dotenv').config()
 
+
 const storage = multer.memoryStorage()
 
 const upload = multer({
@@ -28,6 +29,7 @@ const upload = multer({
 const uploadPromise = promisify(upload)
 
 class speciality_Controller {
+
     add_Speciality = async (req, res) => {
         try {
             // wait for file upload
@@ -340,4 +342,4 @@ class speciality_Controller {
     };
 }
 
-module.exports = new speciality_Controller();
+module.exports = new speciality_Controller()
