@@ -82,6 +82,26 @@ class speciality_Controller {
             res.status(400).json({ error: error.message })
         }
     }
+    
+    get_Speciality_By_ID = async (req, res) => {
+        try {
+            // Get _id from req.body
+            const id = req.params.id;
+
+            // Find speciality by ID
+            const speciality = await Speciality.findById(id);
+
+            // If not found
+            if (!speciality) {
+                return res.status(404).json({error: 'Speciality not found'});
+            }
+
+            res.status(200).json(speciality);
+        } catch (error) {
+            console.log(error.message);
+            res.status(400).json({error: error.message});
+        }
+    }
 
     get_Speciality_List = async (req, res) => {
         try {
@@ -102,6 +122,7 @@ class speciality_Controller {
             //         // Convert buffer directly to base64 string
             //         specialityObject.speciality_image = `data:image/png;base64,${specialityObject.speciality_image.toString('base64')}`
             //     }
+
 
             //     return specialityObject
             // })

@@ -136,4 +136,5 @@ User.statics.change_pass = async function(email, password, is_reset = false){
     return updated_user
 }
 
+
 module.exports = mongoose.model('User', User)

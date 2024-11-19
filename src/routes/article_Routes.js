@@ -17,6 +17,4 @@ router.post('/search-article', article_Controller.search_Article_By_Title_and_Co
 router.post('/get-article-by-month', article_Controller.getArticlesByMonth)
 router.get('/get-article-by-speciality', article_Controller.getTop5ArticleBySpeciality)
 
-
-
 module.exports = router

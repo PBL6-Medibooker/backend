@@ -65,10 +65,11 @@ class article_Controller {
           "host"
         )}/images/articles/${image_name}`
 
-        article.article_image = article_image_path
 
-        await article.save()
+        article.article_image = article_image_path
       }
+      
+      await article.save()
 
       res.status(201).json(article)
     } catch (error) {
@@ -179,6 +180,7 @@ get_All_Article = async(req, res) =>{
       res.status(400).json({error: error.message})
   }
 }
+
 
 update_Article = async(req, res) =>{
   try{
@@ -453,10 +455,6 @@ getArticlesByMonth = async (req, res) => {
     })
   }
 }
-
-
-
-
 }
 
 module.exports = new article_Controller()

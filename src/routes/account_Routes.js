@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken")
 
 const express = require('express')
 const router = express.Router()
+const multer = require('multer')
+const upload = multer().none();
 
 router.post('/login', account_Controller.acc_Login)
 router.post('/signup', account_Controller.acc_Signup)
@@ -16,7 +18,7 @@ router.post('/soft-delete-acc', account_Controller.soft_Delete_Account)
 router.post('/perma-delete-acc', account_Controller.perma_Delete_Account)
 router.post('/restore-acc', account_Controller.restore_Deleted_Account)
 router.post('/change-pass', account_Controller.change_password)
-router.post('/update-doc-info/:id', account_Controller.update_Doctor_Info)
+router.post('/update-doc-info/:id', upload, account_Controller.update_Doctor_Info)
 router.post('/upload-proof/:id', account_Controller.upload_Doctor_Proof)
 router.get(
   '/active-hour-list/:id',
@@ -45,7 +47,6 @@ router.get(
   require_Auth.Auth_Admin,
   account_Controller.getProfileAdmin
 )
-
 router.get(
   "/get-doctor-profile",
   require_Auth.Auth_Doctor,

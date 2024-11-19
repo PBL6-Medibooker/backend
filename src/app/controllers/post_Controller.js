@@ -23,10 +23,10 @@ class post_Controller{
                 post_title, 
                 post_content
             })
-            .populate('user_id', 'email username __t')
+            .populate('user_id', 'email username __t profile_image')
             .populate('speciality_id', 'name')
 
-            res.status(201).json(post)
+            res.status(200).json(post)
         }catch(error){
             res.status(400).json({error: error.message})
         }
@@ -37,9 +37,9 @@ class post_Controller{
             const post_id = req.params.id
 
             const post = await Post.findById(post_id)
-                .populate('user_id', 'email username __t')
+                .populate('user_id', 'email username __t profile_image')
                 .populate('speciality_id', 'name')
-                .populate('post_comments.replier', 'email username __t')
+                .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(200).json(post)
         }catch(error){
@@ -51,9 +51,9 @@ class post_Controller{
         try{
             const {email} = req.body
             const user = await User.findOne({email}, {_id: 1})
-                .populate('user_id', 'email username __t')
+                .populate('user_id', 'email username __t profile_image')
                 .populate('speciality_id', 'name')
-                .populate('post_comments.replier', 'email username __t')
+                .populate('post_comments.replier', 'email username __t profile_image')
             
             const posts = await Post.find({user_id: user._id})
 
@@ -74,9 +74,10 @@ class post_Controller{
             }
             
             const posts = await Post.find({speciality_id: speciality._id})
-                .populate('user_id', 'email username __t')
+
+                .populate('user_id', 'email username __t profile_image')
                 .populate('speciality_id', 'name')
-                .populate('post_comments.replier', 'email username __t')
+                .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(200).json(posts)
         }catch(error){
@@ -88,9 +89,9 @@ class post_Controller{
         try{
             
             const posts = await Post.find()
-                .populate('user_id', 'email username __t')
+                .populate('user_id', 'email username __t profile_image')
                 .populate('speciality_id', 'name')
-                .populate('post_comments.replier', 'email username __t')
+                .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(200).json(posts)
         }catch(error){
@@ -116,9 +117,9 @@ class post_Controller{
                 query,
                 {new: true}
             )
-            .populate('user_id', 'email username __t')
+            .populate('user_id', 'email username __t profile_image')
             .populate('speciality_id', 'name')
-            .populate('post_comments.replier', 'email username __t')
+            .populate('post_comments.replier', 'email username __t profile_image')
 
             if (!post) {
                 return res.status(404).json({error: 'Post not found'})
@@ -139,9 +140,9 @@ class post_Controller{
                 {is_deleted: true},
                 {new: true}
             )
-            .populate('user_id', 'email username __t')
+            .populate('user_id', 'email username __t profile_image')
             .populate('speciality_id', 'name')
-            .populate('post_comments.replier', 'email username __t')
+            .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(200).json({
                 message: 'Post soft deleted',
@@ -162,9 +163,9 @@ class post_Controller{
                 {is_deleted: true},
                 {new: true}
             )
-            .populate('user_id', 'email username __t')
+            .populate('user_id', 'email username __t profile_image')
             .populate('speciality_id', 'name')
-            .populate('post_comments.replier', 'email username __t')
+            .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(200).json({
                 message: 'Post restored',
@@ -214,9 +215,9 @@ class post_Controller{
                 {$push: {post_comments: new_comment}},
                 {new: true}
             )
-            .populate('user_id', 'email username __t')
+            .populate('user_id', 'email username __t profile_image')
             .populate('speciality_id', 'name')
-            .populate('post_comments.replier', 'email username __t')
+            .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(201).json(post)
 
@@ -251,9 +252,9 @@ class post_Controller{
             await post.save()
 
             post = await Post.findById(post_id)
-            .populate('user_id', 'email username __t')
+            .populate('user_id', 'email username __t profile_image')
             .populate('speciality_id', 'name')
-            .populate('post_comments.replier', 'email username __t')
+            .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(200).json(post)
 
@@ -305,9 +306,9 @@ class post_Controller{
             }
 
             const posts = await Post.find(query)
-            .populate('user_id', 'email username __t')
+            .populate('user_id', 'email username __t profile_image')
             .populate('speciality_id', 'name')
-            .populate('post_comments.replier', 'email username __t')
+            .populate('post_comments.replier', 'email username __t profile_image')
 
             res.status(200).json(posts)
         }catch(error){

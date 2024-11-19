@@ -4,6 +4,9 @@ const Region = require('../models/Region')
 const Speciality = require('../models/Speciality')
 const Appointment = require('../models/Appointment')
 
+const crypto = require('crypto')
+const nodemailer = require('nodemailer')
+
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
@@ -43,8 +46,8 @@ const upload_img = multer({
 const upload_Promise_pdf = promisify(upload_pdf)
 const upload_Promise_img = promisify(upload_img)
 
-
 class account_Controller{
+
     create_Token = (_id, expiresIn = '1d') => {
         return jwt.sign({_id}, process.env.JWTSecret, {expiresIn})
     }
@@ -149,7 +152,7 @@ class account_Controller{
             res.status(400).json({error: error.message})
         }
     }
-
+ 
     get_Account_By_Mail = async(req, res) =>{
         try{
             // get id
@@ -233,7 +236,6 @@ class account_Controller{
             if(address){
                 account.address = address
             }
-
             if(!profile_image){ // if no image set as default 
                 account.profile_image = default_profile_img
             }else if(profile_image){ // if image
@@ -259,9 +261,8 @@ class account_Controller{
             }
             
             await account.save()
-
+          
             res.status(200).json(account)
-
         }catch(error){
             console.log(error.message)
             res.status(400).json({error: error.message})
@@ -321,7 +322,6 @@ class account_Controller{
             res.status(400).json({error: error.message})
         }
     }
-
 
     perma_Delete_Account = async(req, res) =>{
         try{
@@ -389,7 +389,7 @@ class account_Controller{
             res.status(500).json({ error: error.message })
         }
     }
-
+    
     reset_password = async(req, res) =>{
         try {
             const token = req.params.token
@@ -441,9 +441,12 @@ class account_Controller{
             // find account
             let account = await Doctor.findById(account_Id)
 
+            
+
             if(!account){
                 return res.status(404).json({error: 'Account not found'})
             }
+
 
             // update
             if(speciality){
@@ -726,6 +729,7 @@ class account_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
 
     change_Doctor_Verified_Status = async(req, res) =>{
         try{
