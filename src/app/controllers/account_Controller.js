@@ -18,7 +18,7 @@ const mongoose = require('mongoose')
 
 require('dotenv').config()
 
-const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+// const default_profile_img = process.env.DEFAULT_PROFILE_IMG
 const storage = multer.memoryStorage()
 
 const upload_pdf = multer({
@@ -32,19 +32,19 @@ const upload_pdf = multer({
     }
 }).single('proof')
 
-const upload_img = multer({
-    storage: storage,
-    fileFilter: (res, file, cb) =>{
-        if(file.mimetype === 'image/jpeg'){
-            cb(null, true)
-        }else{
-            cb(new Error('Only JPG image files are allowed'))
-        }
-    }
-}).single('profile_image')
+// const upload_img = multer({
+//     storage: storage,
+//     fileFilter: (res, file, cb) =>{
+//         if(file.mimetype === 'image/jpeg'){
+//             cb(null, true)
+//         }else{
+//             cb(new Error('Only JPG image files are allowed'))
+//         }
+//     }
+// }).single('profile_image')
 
 const upload_Promise_pdf = promisify(upload_pdf)
-const upload_Promise_img = promisify(upload_img)
+// const upload_Promise_img = promisify(upload_img)
 
 class account_Controller{
 
@@ -204,11 +204,11 @@ class account_Controller{
     update_Acc_Info = async(req, res) =>{
         try{
             // wait for file upload
-            await upload_Promise_img(req, res)
+            // await upload_Promise_img(req, res)
 
             // get info from body
             const {username, phone, underlying_condition, date_of_birth, address} = req.body
-            const profile_image = req.file ? req.file.buffer : null
+            // const profile_image = req.file ? req.file.buffer : null
 
             // get id
             const account_Id = req.params.id
@@ -218,6 +218,22 @@ class account_Controller{
 
             if(!account){
                 return res.status(404).json({error: 'Account not found'})
+            }
+
+            let profile_image = null
+
+            if (req.file) {
+
+                const image_name = `${account_Id}_${Date.now()}`
+
+                const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                    folder: 'PBL6/profiles',
+                    public_id: image_name,
+                    overwrite: true // Replace any existing file with the same name
+                })
+        
+                profile_image = uploadResult.secure_url
+                fs.unlinkSync(req.file.path) // Delete temporary file
             }
 
             // update
@@ -237,26 +253,7 @@ class account_Controller{
                 account.address = address
             }
             if(profile_image){ // if image
-                
-                const image_name = `${account_Id}_${Date.now()}`
-
-                const upload_Result = await new Promise((resolve, reject) => {
-                    const stream = cloudinary.uploader.upload_stream(
-                        {
-                            folder: 'PBL6/profiles/', 
-                            public_id: image_name,
-                            overwrite: true, // Replace any existing file with the same name
-                            format: 'jpg', // Ensure the uploaded file has a consistent format
-                        },
-                        (error, result) => {
-                            if (error) return reject(error)
-                            resolve(result)
-                        }
-                    )
-                    stream.end(profile_image) // Pass the buffer to the stream
-                })
-
-                account.profile_image = upload_Result.secure_url
+                account.profile_image = profile_image
             }
             
             await account.save()

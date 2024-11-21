@@ -3,35 +3,35 @@ const Doctor = require('../models/Doctor')
 const Speciality = require('../models/Speciality')
 const cloudinary = require('../utils/cloudinary')
 
-const multer = require('multer')
-const { promisify } = require('util')
+// const multer = require('multer')
+// const { promisify } = require('util')
 // const fs = require("fs")
 // const path = require("path")
 // const mime = require("mime-types")
 require('dotenv').config()
 
-const storage = multer.memoryStorage()
+// const storage = multer.memoryStorage()
 
-const upload = multer({
-    storage: storage,
-    fileFilter: (res, file, cb) => {
-        if (file.mimetype === 'image/jpeg') {
-            cb(null, true)
-        } else {
-            cb(new Error('Only JPG image files are allowed'))
-        }
-    },
-}).single("article_img")
+// const upload = multer({
+//     storage: storage,
+//     fileFilter: (res, file, cb) => {
+//         if (file.mimetype === 'image/jpeg') {
+//             cb(null, true)
+//         } else {
+//             cb(new Error('Only JPG image files are allowed'))
+//         }
+//     },
+// }).single('article_image')
 
-const uploadPromise = promisify(upload)
+// const uploadPromise = promisify(upload)
 
 class article_Controller {
     add_Article = async (req, res) => {
         try {
-            await uploadPromise(req, res)
+            // await uploadPromise(req, res)
 
             const { email, article_title, article_content } = req.body
-            const article_image = req.file ? req.file.buffer : null
+            // const article_image = req.file ? req.file.buffer : null
         
             const doctor = await Doctor.findOne({ email }, { _id: 1 })
 
@@ -41,28 +41,24 @@ class article_Controller {
                 article_content
             })
 
-            if (article_image) {
+            let article_image = null
+
+            if (req.file) {
 
                 const image_name = `${article._id}_${Date.now()}`
 
-                const upload_Result = await new Promise((resolve, reject) => {
-                    const stream = cloudinary.uploader.upload_stream(
-                        {
-                            folder: 'PBL6/articles/', 
-                            public_id: image_name,
-                            overwrite: true, // Replace any existing file with the same name
-                            format: 'jpg', // Ensure the uploaded file has a consistent format
-                        },
-                        (error, result) => {
-                            if (error) return reject(error)
-                            resolve(result)
-                        }
-                    )
-                    stream.end(article_image) // Pass the buffer to the stream
+                const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                    folder: 'PBL6/articles/',
+                    public_id: image_name,
+                    overwrite: true // Replace any existing file with the same name
                 })
+        
+                speciality_image = uploadResult.secure_url
+                fs.unlinkSync(req.file.path) // Delete temporary file
+            }
 
-                article.article_image = upload_Result.secure_url
-
+            if (article_image) {
+                article.article_image = article_image
                 await article.save()
             }
 
@@ -179,47 +175,44 @@ class article_Controller {
 
     update_Article = async(req, res) =>{
         try{
-            await uploadPromise(req, res)
+            // await uploadPromise(req, res)
 
             const article_id = req.params.id
             const {article_title, article_content} = req.body
-            const article_image = req.file ? req.file.buffer : null
+            // const article_image = req.file ? req.file.buffer : null
 
             let article = await Article.findById(article_id)
+
+            let article_image = null
+
+            if (req.file) {
+
+                const image_name = `${article._id}_${Date.now()}`
+
+                const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                    folder: 'PBL6/articles/',
+                    public_id: image_name,
+                    overwrite: true // Replace any existing file with the same name
+                })
+        
+                speciality_image = uploadResult.secure_url
+                fs.unlinkSync(req.file.path) // Delete temporary file
+            }
 
             if (!article) {
                 throw new Error('Article not found')
             }
 
-            if(article_title){
+            if (article_title) {
                 article.article_title = article_title
             }
 
-            if(article_content){
+            if (article_content) {
                 article.article_content = article_content
             }
 
             if (article_image) {
-
-                const image_name = `${article._id}_${Date.now()}`
-
-                const upload_Result = await new Promise((resolve, reject) => {
-                    const stream = cloudinary.uploader.upload_stream(
-                        {
-                            folder: 'PBL6/articles/', 
-                            public_id: image_name,
-                            overwrite: true, // Replace any existing file with the same name
-                            format: 'jpg', // Ensure the uploaded file has a consistent format
-                        },
-                        (error, result) => {
-                            if (error) return reject(error)
-                            resolve(result)
-                        }
-                    )
-                    stream.end(article_image) // Pass the buffer to the stream
-                })
-
-                article.article_image = upload_Result.secure_url
+                article.article_image = article_image
             }
 
             await article.save()
