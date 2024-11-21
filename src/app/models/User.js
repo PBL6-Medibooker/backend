@@ -5,8 +5,6 @@ const Schema = mongoose.Schema
 
 require('dotenv').config()
 
-const default_profile_img = process.env.DEFAULT_PROFILE_IMG
-
 const User = new Schema({
     email: {
         type: String,

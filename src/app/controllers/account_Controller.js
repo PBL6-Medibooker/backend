@@ -18,7 +18,7 @@ const mongoose = require('mongoose')
 
 require('dotenv').config()
 
-const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+// const default_profile_img = process.env.DEFAULT_PROFILE_IMG
 const storage = multer.memoryStorage()
 
 const upload_pdf = multer({
@@ -32,19 +32,19 @@ const upload_pdf = multer({
     }
 }).single('proof')
 
-const upload_img = multer({
-    storage: storage,
-    fileFilter: (res, file, cb) =>{
-        if(file.mimetype === 'image/jpeg'){
-            cb(null, true)
-        }else{
-            cb(new Error('Only JPG image files are allowed'))
-        }
-    }
-}).single('profile_image')
+// const upload_img = multer({
+//     storage: storage,
+//     fileFilter: (res, file, cb) =>{
+//         if(file.mimetype === 'image/jpeg'){
+//             cb(null, true)
+//         }else{
+//             cb(new Error('Only JPG image files are allowed'))
+//         }
+//     }
+// }).single('profile_image')
 
 const upload_Promise_pdf = promisify(upload_pdf)
-const upload_Promise_img = promisify(upload_img)
+// const upload_Promise_img = promisify(upload_img)
 
 class account_Controller{
 
@@ -204,11 +204,11 @@ class account_Controller{
     update_Acc_Info = async(req, res) =>{
         try{
             // wait for file upload
-            await upload_Promise_img(req, res)
+            // await upload_Promise_img(req, res)
 
             // get info from body
             const {username, phone, underlying_condition, date_of_birth, address} = req.body
-            const profile_image = req.file ? req.file.buffer : null
+            // const profile_image = req.file ? req.file.buffer : null
 
             // get id
             const account_Id = req.params.id
@@ -218,6 +218,22 @@ class account_Controller{
 
             if(!account){
                 return res.status(404).json({error: 'Account not found'})
+            }
+
+            let profile_image = null
+
+            if (req.file) {
+
+                const image_name = `${account_Id}_${Date.now()}`
+
+                const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                    folder: 'PBL6/profiles',
+                    public_id: image_name,
+                    overwrite: true // Replace any existing file with the same name
+                })
+        
+                profile_image = uploadResult.secure_url
+                fs.unlinkSync(req.file.path) // Delete temporary file
             }
 
             // update
@@ -236,24 +252,8 @@ class account_Controller{
             if(address){
                 account.address = address
             }
-            if(!profile_image){ // if no image set as default 
-                account.profile_image = default_profile_img
-            }else if(profile_image){ // if image
-                
-                const image_name = `${account_Id}_${Date.now()}`
-
-                // Promisify Cloudinary upload stream
-                const upload_Stream = promisify(cloudinary.uploader.upload_stream)
-
-                // Upload image to Cloudinary
-                const upload_Result = await upload_Stream({
-                    folder: 'PBL6/profiles/', // Cloudinary folder for profiles
-                    public_id: image_name, // Custom public_id (name) for the image
-                    overwrite: true, // Overwrite any existing file with the same name
-                    format: 'jpg', // Ensure the uploaded file is in jpg format
-                })
-
-                account.profile_image = upload_Result.secure_url
+            if(profile_image){ // if image
+                account.profile_image = profile_image
             }
             
             await account.save()
@@ -335,10 +335,13 @@ class account_Controller{
             // Prepare an array of public_ids to delete from Cloudinary
             const public_Ids = accounts.map(account => {
                 const image_Url = account.profile_image
+
+                if (!image_Url) return null
+
                 const url_Parts = image_Url.split('/')
                 const public_Id = url_Parts.slice(-3).join('/')// Extract public_id from URL
                 return public_Id
-            })
+            }).filter(public_Id => public_Id)
 
             // Delete images from Cloudinary
             if (public_Ids.length > 0) {
