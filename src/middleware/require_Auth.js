@@ -83,4 +83,3 @@ require("dotenv").config()
     }    
 
 module.exports = new requireAuth()
-

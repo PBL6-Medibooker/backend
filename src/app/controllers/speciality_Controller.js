@@ -1,17 +1,16 @@
 const Speciality = require('../models/Speciality')
+const Doctor = require('../models/Doctor')
+const cloudinary = require('../utils/cloudinary')
 
+// const fs = require('fs')
+// const path = require('path')
+// const mime = require('mime-types')
 // const sharp = require('sharp')
 const multer = require('multer')
 const { promisify } = require('util')
-const fs = require('fs')
-const path = require('path')
-const mime = require('mime-types')
 const mongoose = require('mongoose')
 
-const Doctor = require('../models/Doctor')
-
 require('dotenv').config()
-
 
 const storage = multer.memoryStorage()
 
@@ -42,36 +41,28 @@ class speciality_Controller {
             const exists_spec = await Speciality.findOne({ name })
 
             if (exists_spec) {
-                throw new Error("Speciality already exits")
+                throw new Error('Speciality already exits')
             }
 
             //create
             let speciality = await Speciality.create({ name, description })
 
-            if (!speciality_image) {
-                speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
-            } else if (speciality_image) {
-                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+            if (speciality_image) {
 
-                const image_name = `${speciality._id}.jpg`
+                const image_name = `${speciality._id}_${Date.now()}`
 
-                const images_Dir = path.join(
-                __dirname,
-                "../../../image/speciality-logos"
-                )
-                const image_Path = path.join(images_Dir, image_name)
+                // Promisify Cloudinary upload stream
+                const upload_Stream = promisify(cloudinary.uploader.upload_stream)
 
-                // check if directory exits
-                if (!fs.existsSync(images_Dir)) {
-                    fs.mkdirSync(images_Dir, { recursive: true })
-                }
+                // Upload image to Cloudinary
+                const upload_Result = await upload_Stream({
+                    folder: 'PBL6/specialities/', // Cloudinary folder for profiles
+                    public_id: image_name, // Custom public_id (name) for the image
+                    overwrite: true, // Overwrite any existing file with the same name
+                    format: 'jpg', // Ensure the uploaded file is in jpg format
+                })
 
-                // save image
-                fs.writeFileSync(image_Path, speciality_image)
-
-                const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
-
-                speciality.speciality_image = speciality_image_path
+                speciality.speciality_image = upload_Result.secure_url
 
                 await speciality.save()
             }
@@ -156,41 +147,32 @@ class speciality_Controller {
             // update
             if (name) {
                 const existingSpeciality = await Speciality.findOne({
-                name,
-                _id: {$ne: speciality_Id},
+                    name,
+                    _id: {$ne: speciality_Id},
                 })
                 if (existingSpeciality) {
-                throw new Error('Speciality already exits')
+                    throw new Error('Speciality already exits')
                 }
                 speciality.name = name
             }
             if (description) {
                 speciality.description = description
             }
-            if (!speciality_image) {
-                speciality.speciality_image = process.env.DEFAULT_SPECIALITY_IMG
-            } else if (speciality_image) {
-                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+            if (speciality_image) {
+                const image_name = `${speciality._id}_${Date.now()}`
 
-                const image_name = `${speciality._id}.jpg`
+                // Promisify Cloudinary upload stream
+                const upload_Stream = promisify(cloudinary.uploader.upload_stream)
 
-                const images_Dir = path.join(
-                __dirname,
-                '../../../image/speciality-logos'
-                )
-                const image_Path = path.join(images_Dir, image_name)
+                // Upload image to Cloudinary
+                const upload_Result = await upload_Stream({
+                    folder: 'PBL6/specialities/', // Cloudinary folder for profiles
+                    public_id: image_name, // Custom public_id (name) for the image
+                    overwrite: true, // Overwrite any existing file with the same name
+                    format: 'jpg', // Ensure the uploaded file is in jpg format
+                })
 
-                // check if directory exits
-                if (!fs.existsSync(images_Dir)) {
-                fs.mkdirSync(images_Dir, {recursive: true})
-                }
-
-                // save image
-                fs.writeFileSync(image_Path, speciality_image)
-
-                const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
-
-                speciality.speciality_image = speciality_image_path
+                speciality.speciality_image = upload_Result.secure_url
             }
 
             await speciality.save()
@@ -274,6 +256,31 @@ class speciality_Controller {
                 speciality_Ids.length === 0
             ) {
                 return res.status(400).json({error: 'No IDs provided'})
+            }
+
+            // Find the specialities to delete and retrieve their image public_ids
+            const specialities = await Speciality.find({ _id: { $in: speciality_Ids } }, 'speciality_image')
+
+            // Prepare an array of public_ids to delete from Cloudinary
+            const public_Ids = specialities.map(speciality => {
+                const image_Url = speciality.speciality_image
+                const url_Parts = image_Url.split('/')
+                const public_Id = url_Parts.slice(-3).join('/')// Extract public_id from URL
+                return public_Id
+            })
+
+            // Delete images from Cloudinary
+            if (public_Ids.length > 0) {
+                const cloudinary_Delete_Promises = public_Ids.map(public_Id => {
+                    return new Promise((resolve, reject) => {
+                        cloudinary.uploader.destroy(public_Id, (error, result) => {
+                            if (error) return reject(error)
+                            resolve(result)
+                        })
+                    })
+                })
+
+                await Promise.all(cloudinary_Delete_Promises) // Wait for all deletions to complete
             }
 
             // delete

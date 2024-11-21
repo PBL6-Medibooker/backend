@@ -2,11 +2,14 @@ const Article = require("../models/Article")
 const Doctor = require("../models/Doctor")
 const Speciality = require("../models/Speciality")
 
+const cloudinary = require('../utils/cloudinary')
+
 const multer = require("multer")
 const { promisify } = require("util")
 const fs = require("fs")
 const path = require("path")
 const mime = require("mime-types")
+
 require("dotenv").config()
 
 const storage = multer.memoryStorage()
@@ -27,55 +30,38 @@ const uploadPromise = promisify(upload)
 class article_Controller {
   add_Article = async (req, res) => {
     try {
-      await uploadPromise(req, res)
+      const { email, article_title, article_content } = req.body;
+      
+      if (req.fileValidationError) {
+        return res.status(400).json({ error: req.fileValidationError });
+      }
 
-      const { email, article_title, article_content } = req.body
-      const article_image = req.file ? req.file.buffer : null
-   
-      const doctor = await Doctor.findOne({ email }, { _id: 1 })
+      const doctor = await Doctor.findOne({ email }, { _id: 1 });
 
       let article = await Article.create({
         doctor_id: doctor._id,
         article_title,
         article_content,
-        article_image: article_image
-          ? article_image
-          : process.env.DEFAULT_SPECIALITY_IMG,
-      })
+      });
 
-      if (!article_image) {
-        article.article_image = process.env.DEFAULT_SPECIALITY_IMG
-      } else if (article_image) {
-        // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+      if (req.file) {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: "PBL6/articles",
+        });
 
-        const image_name = `${article._id}.jpg`
+        const article_image_path = uploadResult.secure_url;
+        fs.unlinkSync(req.file.path);
 
-        const images_Dir = path.join(__dirname, "../../../image/articles")
-        const image_Path = path.join(images_Dir, image_name)
-
-        // check if directory exits
-        if (!fs.existsSync(images_Dir)) {
-          fs.mkdirSync(images_Dir, { recursive: true })
-        }
-
-        // save image
-        fs.writeFileSync(image_Path, article_image)
-
-        const article_image_path = `${req.protocol}://${req.get(
-          "host"
-        )}/images/articles/${image_name}`
-
-
-        article.article_image = article_image_path
+        article.article_image = article_image_path;
       }
-      
-      await article.save()
 
-      res.status(201).json(article)
+      await article.save();
+
+      res.status(201).json(article);
     } catch (error) {
-      res.status(400).json({ error: error.message })
+      res.status(400).json({ error: error.message });
     }
-  }
+  };
 
   get_Article = async(req, res) =>{
     try{
@@ -184,11 +170,8 @@ get_All_Article = async(req, res) =>{
 
 update_Article = async(req, res) =>{
   try{
-      await uploadPromise(req, res)
-
       const article_id = req.params.id
       const {article_title, article_content} = req.body
-      const article_image = req.file ? req.file.buffer : null
 
       let article = await Article.findById(article_id)
 
@@ -204,28 +187,15 @@ update_Article = async(req, res) =>{
           article.article_content = article_content
       }
 
-      if(!article_image){
-          article.article_image = process.env.DEFAULT_SPECIALITY_IMG
-      }else if(article_image){
-          // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
+      if (req.file) {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: "PBL6/articles",
+        });
 
-          const image_name =  `${article._id}.jpg`
+        const article_image_path = uploadResult.secure_url;
+        fs.unlinkSync(req.file.path);
 
-          const images_Dir = path.join(__dirname, '../../../image/articles')
-          const image_Path = path.join(images_Dir, image_name)
-
-          // check if directory exits
-          if (!fs.existsSync(images_Dir)) {
-              fs.mkdirSync(images_Dir, {recursive: true})
-          }
-
-          // save image
-          fs.writeFileSync(image_Path, article_image)
-
-          const article_image_path = `${req.protocol}://${req.get('host')}/images/articles/${image_name}`
-
-          article.article_image = article_image_path
-
+        article.article_image = article_image_path;
       }
 
       await article.save()
