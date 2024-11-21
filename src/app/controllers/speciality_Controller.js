@@ -51,15 +51,20 @@ class speciality_Controller {
 
                 const image_name = `${speciality._id}_${Date.now()}`
 
-                // Promisify Cloudinary upload stream
-                const upload_Stream = promisify(cloudinary.uploader.upload_stream)
-
-                // Upload image to Cloudinary
-                const upload_Result = await upload_Stream({
-                    folder: 'PBL6/specialities/', // Cloudinary folder for profiles
-                    public_id: image_name, // Custom public_id (name) for the image
-                    overwrite: true, // Overwrite any existing file with the same name
-                    format: 'jpg', // Ensure the uploaded file is in jpg format
+                const upload_Result = await new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: 'PBL6/specialities/', 
+                            public_id: image_name,
+                            overwrite: true, // Replace any existing file with the same name
+                            format: 'jpg', // Ensure the uploaded file has a consistent format
+                        },
+                        (error, result) => {
+                            if (error) return reject(error)
+                            resolve(result)
+                        }
+                    )
+                    stream.end(speciality_image) // Pass the buffer to the stream
                 })
 
                 speciality.speciality_image = upload_Result.secure_url
@@ -161,15 +166,20 @@ class speciality_Controller {
             if (speciality_image) {
                 const image_name = `${speciality._id}_${Date.now()}`
 
-                // Promisify Cloudinary upload stream
-                const upload_Stream = promisify(cloudinary.uploader.upload_stream)
-
-                // Upload image to Cloudinary
-                const upload_Result = await upload_Stream({
-                    folder: 'PBL6/specialities/', // Cloudinary folder for profiles
-                    public_id: image_name, // Custom public_id (name) for the image
-                    overwrite: true, // Overwrite any existing file with the same name
-                    format: 'jpg', // Ensure the uploaded file is in jpg format
+                const upload_Result = await new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: 'PBL6/specialities/', 
+                            public_id: image_name,
+                            overwrite: true, // Replace any existing file with the same name
+                            format: 'jpg', // Ensure the uploaded file has a consistent format
+                        },
+                        (error, result) => {
+                            if (error) return reject(error)
+                            resolve(result)
+                        }
+                    )
+                    stream.end(speciality_image) // Pass the buffer to the stream
                 })
 
                 speciality.speciality_image = upload_Result.secure_url
@@ -264,16 +274,23 @@ class speciality_Controller {
             // Prepare an array of public_ids to delete from Cloudinary
             const public_Ids = specialities.map(speciality => {
                 const image_Url = speciality.speciality_image
+
+                if (!image_Url) return null
+
+                // Extract public_id from URL
                 const url_Parts = image_Url.split('/')
-                const public_Id = url_Parts.slice(-3).join('/')// Extract public_id from URL
-                return public_Id
-            })
+                const public_Id = url_Parts.slice(-3).join('/')
+                return public_Id //public_Id
+            }).filter(public_Id => public_Id)
+
+            console.log(public_Ids)
 
             // Delete images from Cloudinary
             if (public_Ids.length > 0) {
                 const cloudinary_Delete_Promises = public_Ids.map(public_Id => {
                     return new Promise((resolve, reject) => {
                         cloudinary.uploader.destroy(public_Id, (error, result) => {
+                            console.log({ error, result })
                             if (error) return reject(error)
                             resolve(result)
                         })
