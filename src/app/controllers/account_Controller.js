@@ -236,21 +236,24 @@ class account_Controller{
             if(address){
                 account.address = address
             }
-            if(!profile_image){ // if no image set as default 
-                account.profile_image = default_profile_img
-            }else if(profile_image){ // if image
+            if(profile_image){ // if image
                 
                 const image_name = `${account_Id}_${Date.now()}`
 
-                // Promisify Cloudinary upload stream
-                const upload_Stream = promisify(cloudinary.uploader.upload_stream)
-
-                // Upload image to Cloudinary
-                const upload_Result = await upload_Stream({
-                    folder: 'PBL6/profiles/', // Cloudinary folder for profiles
-                    public_id: image_name, // Custom public_id (name) for the image
-                    overwrite: true, // Overwrite any existing file with the same name
-                    format: 'jpg', // Ensure the uploaded file is in jpg format
+                const upload_Result = await new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: 'PBL6/profiles/', 
+                            public_id: image_name,
+                            overwrite: true, // Replace any existing file with the same name
+                            format: 'jpg', // Ensure the uploaded file has a consistent format
+                        },
+                        (error, result) => {
+                            if (error) return reject(error)
+                            resolve(result)
+                        }
+                    )
+                    stream.end(profile_image) // Pass the buffer to the stream
                 })
 
                 account.profile_image = upload_Result.secure_url
@@ -335,10 +338,13 @@ class account_Controller{
             // Prepare an array of public_ids to delete from Cloudinary
             const public_Ids = accounts.map(account => {
                 const image_Url = account.profile_image
+
+                if (!image_Url) return null
+
                 const url_Parts = image_Url.split('/')
                 const public_Id = url_Parts.slice(-3).join('/')// Extract public_id from URL
                 return public_Id
-            })
+            }).filter(public_Id => public_Id)
 
             // Delete images from Cloudinary
             if (public_Ids.length > 0) {
