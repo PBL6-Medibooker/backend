@@ -25,7 +25,7 @@ router.post(
     '/restore-speciality',
     speciality_Controller.restore_Deleted_Specialty
 )
-router.get('/get-speciality/:id', speciality_Controller.getSpecData)
+router.get('/get-spec/:id', speciality_Controller.getSpecData)
 
 router.get(
     '/get-doc-count',

@@ -52,4 +52,10 @@ router.get(
     appointment_Controller.getAppointmentInfo
 )
 
+router.get(
+  "/get-user-appointments/:id",
+  appointment_Controller.getAllUserAppointments
+)
+
+
 module.exports = router
