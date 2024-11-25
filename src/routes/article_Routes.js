@@ -1,6 +1,6 @@
 const article_Controller = require('../app/controllers/article_Controller')
 const require_Auth = require('../middleware/require_Auth')
-const upload_image = require('../middleware/multer')
+const {upload_image} = require('../middleware/multer')
 
 const express = require('express')
 const router = express.Router()

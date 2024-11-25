@@ -1,5 +1,5 @@
 const speciality_Controller = require('../app/controllers/speciality_Controller')
-const upload_image = require('../middleware/multer')
+const {upload_image} = require('../middleware/multer')
 
 const express = require('express')
 const router = express.Router()
