@@ -99,7 +99,7 @@ class speciality_Controller {
         try {
             let specialities;
             const { hidden_state } = req.body
-
+        
             // find list of speciality
             if (hidden_state == 'true') {
                 specialities = await Speciality.find({is_deleted: true})
@@ -380,61 +380,6 @@ class speciality_Controller {
         }
     };
 
-    getTopUsers = async (req, res) => {
-        try {
-          const result = await Appointment.aggregate([
-            {
-             
-              $match: {
-                is_deleted: { $ne: true }, 
-              },
-            },
-            {
-            
-              $group: {
-                _id: "$user_id",
-                appointmentCount: { $sum: 1 },
-              },
-            },
-            {
-             
-              $sort: { appointmentCount: -1 },
-            },
-            {
-              
-              $limit: 5,
-            },
-            {
-            
-              $lookup: {
-                from: "users",
-                localField: "_id",
-                foreignField: "_id",
-                as: "userDetails",
-              },
-            },
-            {
-              
-              $project: {
-                userId: "$_id",
-                appointmentCount: 1,
-                userDetails: { $arrayElemAt: ["$userDetails", 0] }, 
-              },
-            },
-          ]);
-      
-          if (!result.length) {
-            return res.status(404).json({ message: "No users found." });
-          }
-      
-          return res.status(200).json({ data: result });
-        } catch (err) {
-          console.error("Error:", err);
-          return res.status(500).json({
-            error: "An error occurred.",
-          });
-        }
-      };
 }
 
 module.exports = new speciality_Controller()

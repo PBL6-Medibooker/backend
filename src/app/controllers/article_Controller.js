@@ -5,7 +5,7 @@ const cloudinary = require('../utils/cloudinary')
 
 // const multer = require('multer')
 // const { promisify } = require('util')
-// const fs = require("fs")
+const fs = require("fs")
 // const path = require("path")
 // const mime = require("mime-types")
 require('dotenv').config()
@@ -53,7 +53,7 @@ class article_Controller {
                     overwrite: true // Replace any existing file with the same name
                 })
         
-                speciality_image = uploadResult.secure_url
+                article_image = uploadResult.secure_url
                 fs.unlinkSync(req.file.path) // Delete temporary file
             }
 
@@ -195,7 +195,7 @@ class article_Controller {
                     overwrite: true // Replace any existing file with the same name
                 })
         
-                speciality_image = uploadResult.secure_url
+                article_image = uploadResult.secure_url
                 fs.unlinkSync(req.file.path) // Delete temporary file
             }
 
@@ -287,6 +287,7 @@ class article_Controller {
         try{
             // get id list
             const {article_Ids} = req.body
+            
 
             // if no ids
             if (!article_Ids || !Array.isArray(article_Ids) || article_Ids.length === 0) {
