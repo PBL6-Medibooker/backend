@@ -1,6 +1,6 @@
 const article_Controller = require('../app/controllers/article_Controller')
+const { upload_image } = require('../middleware/multer')
 const require_Auth = require('../middleware/require_Auth')
-const {upload_image} = require('../middleware/multer')
 
 const express = require('express')
 const router = express.Router()
@@ -16,7 +16,7 @@ router.post('/get-all-article-by-doctor', article_Controller.get_all_Article_By_
 router.post('/get-all-article-by-speciality', article_Controller.get_all_Article_by_Doctor_Speciality)
 router.post(
     '/update-article/:id',
-    upload_image.single('article_image'),  
+    upload_image.single('article_image'), 
     article_Controller.update_Article)
 router.post('/soft-del-article', article_Controller.soft_Delete_Article)
 router.post('/restore-article', article_Controller.restore_Article)

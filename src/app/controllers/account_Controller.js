@@ -61,12 +61,10 @@ class account_Controller {
 
       if (acc.is_deleted) {
         // console.log("Login failed. Account has been soft-deleted: ", email);
-        return res
-          .status(403)
-          .json({
-            error:
-              "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
-          });
+        return res.status(403).json({
+          error:
+            "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+        });
       }
 
       const token = this.create_Token(acc._id);
@@ -221,13 +219,9 @@ class account_Controller {
 
   update_Acc_Info = async (req, res) => {
     try {
-      // wait for file upload
-      // await upload_Promise_img(req, res)
-
       // get info from body
       const { username, phone, underlying_condition, date_of_birth, address } =
         req.body;
-      // const profile_image = req.file ? req.file.buffer : null
 
       // get id
       const account_Id = req.params.id;
@@ -239,14 +233,18 @@ class account_Controller {
         return res.status(404).json({ error: "Account not found" });
       }
 
-      let profile_image = null;
+      if (req.fileValidationError) {
+        return res.status(400).json({ error: req.fileValidationError });
+      }
+
+      let profile_image = account.profile_image;
 
       if (req.file) {
         const image_name = `${account_Id}_${Date.now()}`;
 
         const uploadResult = await cloudinary.uploader.upload(req.file.path, {
           folder: "PBL6/profiles",
-          public_id: image_name,
+          public_id: account_Id,
           overwrite: true, // Replace any existing file with the same name
         });
 
@@ -270,10 +268,7 @@ class account_Controller {
       if (address) {
         account.address = address;
       }
-      if (profile_image) {
-        // if image
-        account.profile_image = profile_image;
-      }
+      account.profile_image = profile_image;
 
       await account.save();
 
@@ -371,8 +366,28 @@ class account_Controller {
 
           if (!image_Url) return null;
 
-          const url_Parts = image_Url.split("/");
-          const public_Id = url_Parts.slice(-3).join("/"); // Extract public_id from URL
+          const public_Id = image_Url
+            .split("/")
+            .slice(-3)
+            .join("/")
+            .replace(/\.\w+$/, "");  // Extract public_id from URL
+
+          return public_Id;
+        })
+        .filter((public_Id) => public_Id);
+
+        const public_Proofs = accounts
+        .map((account) => {
+          const image_Url = account.proof;
+
+          if (!image_Url) return null;
+
+          const public_Id = image_Url
+            .split("/")
+            .slice(-3)
+            .join("/")
+            .replace(/\.\w+$/, "");  // Extract public_id from URL
+            
           return public_Id;
         })
         .filter((public_Id) => public_Id);
@@ -380,6 +395,19 @@ class account_Controller {
       // Delete images from Cloudinary
       if (public_Ids.length > 0) {
         const cloudinary_Delete_Promises = public_Ids.map((public_Id) => {
+          return new Promise((resolve, reject) => {
+            cloudinary.uploader.destroy(public_Id, (error, result) => {
+              if (error) return reject(error);
+              resolve(result);
+            });
+          });
+        });
+
+        await Promise.all(cloudinary_Delete_Promises); // Wait for all deletions to complete
+      }
+
+      if (public_Proofs.length > 0) {
+        const cloudinary_Delete_Promises = public_Proofs.map((public_Id) => {
           return new Promise((resolve, reject) => {
             cloudinary.uploader.destroy(public_Id, (error, result) => {
               if (error) return reject(error);
@@ -553,7 +581,7 @@ class account_Controller {
       // Upload file to Cloudinary
       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
         folder: "PBL6/proofs",
-        public_id: pdf_name,
+        public_id: account_Id,
         overwrite: true,
       });
 
