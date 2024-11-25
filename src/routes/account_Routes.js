@@ -10,16 +10,7 @@ const upload = multer().none();
 const { upload_image, uploadPDF } = require("../middleware/multer");
 
 router.post("/login", account_Controller.acc_Login);
-router.post("/signup", uploadPDF.single("proof"), (req, res) => {
-  // Log để xác minh middleware đúng được gọi
-  console.log("Middleware uploadPDF được kích hoạt");
-  if (!req.file) {
-    return res
-      .status(400)
-      .json({ error: "No file uploaded or invalid file type" });
-  }
-  account_Controller.acc_Signup(req, res);
-});
+router.post("/signup", uploadPDF.single("proof"), account_Controller.acc_Signup);
 router.post("/acc-list", account_Controller.get_Account_List);
 router.post("/get-acc-mail", account_Controller.get_Account_By_Mail);
 router.post("/get-acc/:id", account_Controller.get_Account_By_Id);

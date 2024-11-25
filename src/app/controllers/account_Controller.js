@@ -76,9 +76,13 @@ class account_Controller {
 
   acc_Signup = async (req, res) => {
     try {
+      if (req.fileValidationError) {
+        return res
+          .status(400)
+          .json({ error: req.fileValidationError });
+      }
       // get info from body
       const { email, password, username, phone, is_doc } = req.body;
-      //   const proof = req.file ? req.file.buffer : null;
       const role = "user";
       let acc;
 
@@ -107,8 +111,6 @@ class account_Controller {
         // console.log('not doc')
         acc = await User.add_User(email, password, username, phone);
       }
-      // console.log(acc)
-
       // create token and respone
       const token = this.create_Token(acc._id);
       res.status(201).json({ email, token, role });
