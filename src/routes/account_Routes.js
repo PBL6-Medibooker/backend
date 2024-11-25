@@ -1,15 +1,16 @@
 const account_Controller =require('../app/controllers/account_Controller')
 const require_Auth = require('../middleware/require_Auth')
-
+const upload = require("../middleware/multer");
 const express = require('express')
 const router = express.Router()
 
 router.post('/login', account_Controller.acc_Login)
 router.post('/signup', account_Controller.acc_Signup)
+router.post('/get-proof/:id', account_Controller.getDoctorProof)
 router.post('/acc-list', account_Controller.get_Account_List)
 router.post('/get-acc-mail', account_Controller.get_Account_By_Mail)
 router.post('/get-acc/:id', account_Controller.get_Account_By_Id)
-router.post('/update-acc-info/:id', account_Controller.update_Acc_Info)
+router.post('/update-acc-info/:id', upload.single("profile_image"), account_Controller.update_Acc_Info)
 router.post('/soft-delete-acc', account_Controller.soft_Delete_Account)
 router.post('/perma-delete-acc', account_Controller.perma_Delete_Account)
 router.post('/restore-acc', account_Controller.restore_Deleted_Account)

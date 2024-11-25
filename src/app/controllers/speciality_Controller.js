@@ -60,7 +60,9 @@ class speciality_Controller{
                 // save image
                 fs.writeFileSync(image_Path, speciality_image)
 
-                const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
+                // const speciality_image_path = `${req.protocol}://${req.get('host')}/images/speciality-logos/${image_name}`
+                const speciality_image_path = `${process.env.BASE_URL}/images/speciality-logos/${image_name}`;
+
 
                 speciality.speciality_image = speciality_image_path
 

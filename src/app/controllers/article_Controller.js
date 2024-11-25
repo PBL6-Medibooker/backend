@@ -55,7 +55,8 @@ class article_Controller{
                 // save image
                 fs.writeFileSync(image_Path, article_image)
 
-                const article_image_path = `${req.protocol}://${req.get('host')}/images/articles/${image_name}`
+                // const article_image_path = `${req.protocol}://${req.get('host')}/images/articles/${image_name}`
+                const article_image_path = `${process.env.BASE_URL}/images/articles/${image_name}`
 
                 article.article_image = article_image_path
 
@@ -67,6 +68,52 @@ class article_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    // add_Article = async (req, res) => {
+    //     try {
+    //         await uploadPromise(req, res);
+    
+    //         const { email, article_title, article_content } = req.body;
+    //         const article_image = req.file ? req.file.buffer : null;
+    
+    //         const doctor = await Doctor.findOne({ email }, { _id: 1 });
+    
+    //         // Tạo bài viết mới, gán article_image mặc định nếu không có hình ảnh
+    //         let article = await Article.create({
+    //             doctor_id: doctor._id,
+    //             article_title,
+    //             article_content,
+    //             article_image: article_image ? article_image : process.env.DEFAULT_SPECIALITY_IMG,  // Set default if no image
+    //         });
+    
+    //         if (article_image) {
+    //             const image_name = `${article._id}.jpg`;  // Đặt tên hình ảnh theo article._id
+    //             const images_Dir = path.join(__dirname, '../../../image/articles');
+    //             const image_Path = path.join(images_Dir, image_name);
+    
+    //             // Kiểm tra nếu thư mục chưa tồn tại, tạo mới
+    //             if (!fs.existsSync(images_Dir)) {
+    //                 fs.mkdirSync(images_Dir, { recursive: true });
+    //             }
+    
+    //             // Lưu hình ảnh vào thư mục
+    //             fs.writeFileSync(image_Path, article_image);
+    
+    //             // Cập nhật đường dẫn hình ảnh
+    //             // const article_image_path = `${req.protocol}://${req.get('host')}/images/articles/${image_name}`;
+    //             const article_image_path = `${process.env.BASE_URL}/images/articles/${image_name}`
+
+    //             article.article_image = article_image_path;
+    
+    //             await article.save();  // Lưu lại thông tin bài viết với đường dẫn hình ảnh
+    //         }
+    
+    //         res.status(201).json(article);  // Trả về bài viết đã tạo
+    //     } catch (error) {
+    //         res.status(400).json({ error: error.message });  // Trả về lỗi nếu có
+    //     }
+    // };
+    
 
     get_Article = async(req, res) =>{
         try{

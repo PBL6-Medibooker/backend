@@ -3,6 +3,7 @@ const Doctor = require('../models/Doctor')
 const Region = require('../models/Region')
 const Speciality = require('../models/Speciality')
 const Appointment = require('../models/Appointment')
+const cloudinary = require("../../utils/cloudinary");
 
 const multer = require('multer')
 const { promisify } = require('util')
@@ -50,20 +51,39 @@ class user_Controller{
 
     acc_Login = async(req, res) => {
         // get info from body
-        const {email, password} = req.body
+        // const {email, password} = req.body
         console.log(req.headers['content-type'])
+        console.log("Request headers: ", req.headers);
+        console.log("Request body: ", req.body);
         // get account
+
+        // Nhận thông tin email và password từ body
+        const { email, password } = req.body;
+
         try{
+            console.log("Attempting to login with email: ", email);
+
             let acc
             acc = await User.login(email, password)
 
+            if (acc.isDeleted) {
+                console.log("Login failed. Account has been soft-deleted: ", email);
+                return res.status(403).json({ error: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ." });
+            }
+
+            // Nếu thành công, log thông tin tài khoản
+            console.log("Login successful. Account: ", acc);
+
             const token = this.create_Token(acc._id)
             const role = acc.role
+            console.log("Generated token: ", token);
             
             if(acc instanceof Doctor){
                 const verified = acc.verified
+                console.log("Account type: Doctor, Verified status: ", verified);
                 res.status(200).json({email, token, role, verified})
             }else{
+                console.log("Account type: Regular user");
                 res.status(200).json({email, token, role})
             }
         }catch(error){
@@ -102,6 +122,72 @@ class user_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+    // acc_Signup = async(req, res) => {
+    //     try{
+    //         // wait for file upload
+    //         // await upload_Promise_pdf(req, res)
+            
+    //         // get info from body
+    //         const {email, password, username, phone, is_doc} = req.body
+    //         // const proof = req.file ? req.file.buffer : null
+    //         let proof = null;
+    //         if (req.file) {
+    //             const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+    //                 folder: "PBL6/proofs",
+    //             });
+    //             proof = uploadResult.secure_url;
+    //             fs.unlinkSync(req.file.path);
+    //         }
+    //         const role = 'user'
+    //         let acc
+            
+    //         // add account
+    //         if(is_doc == '1'){ //if doctor account
+    //             // console.log('doc')
+    //             acc = await Doctor.add_Doctor(email, password, username, phone, proof)
+    //         }else{
+    //             // console.log('not doc')
+    //             acc = await User.add_User(email, password, username, phone)
+    //         }
+    //         // console.log(acc)
+
+    //         // create token and respone
+    //         const token = this.create_Token(acc._id)
+    //         res.status(201).json({email, token, role})
+
+    //     }catch(error){ //if user account
+    //         console.log(error.message)
+    //         res.status(400).json({error: error.message})
+    //     }
+    // }
+
+    getDoctorProof = async (req, res) => {
+        try {
+          const account_Id = req.params.id;
+          const account = await Doctor.findById(account_Id);
+      
+          if (!account) {
+            return res.status(404).json({ message: "Tài khoản không tồn tại" });
+          }
+          if (!account.proof) {
+            return res.status(404).json({ message: "Không có minh chứng nào được lưu" });
+          }
+      
+          // Trả về thông tin file PDF
+          res.status(200).json({
+            proof: {
+              name: "proof.pdf", // Nếu lưu thêm tên file, bạn có thể trả về từ DB
+              buffer: account.proof.toString("base64"), // Chuyển buffer sang Base64 để dễ truyền
+            },
+          });
+        } catch (error) {
+          console.error("Lỗi khi lấy minh chứng:", error.message);
+          res.status(500).json({ message: "Lỗi server" });
+        }
+      };
+      
+
 
     get_Account_List = async(req, res) =>{
         try{
@@ -196,75 +282,60 @@ class user_Controller{
         }
     }
 
-    update_Acc_Info = async(req, res) =>{
-        try{
-            // wait for file upload
-            await upload_Promise_img(req, res)
-
-            // get info from body
-            const {username, phone, underlying_condition, date_of_birth, address} = req.body
-            const profile_image = req.file ? req.file.buffer : null
-
-            // get id
-            const account_Id = req.params.id
-
-            // find account
-            let account = await User.findById(account_Id)
-
-            if(!account){
-                return res.status(404).json({error: 'Account not found'})
-            }
-
-            // update
-            if(username){
-                account.username = username
-            }
-            if(phone){
-                account.phone = phone
-            }
-            if(underlying_condition){
-                account.underlying_condition = underlying_condition
-            }
-            if(date_of_birth){
-                account.date_of_birth = date_of_birth
-            }
-            if(address){
-                account.address = address
-            }
-
-            if(!profile_image){ // if no image set as default 
-                account.profile_image = default_profile_img
-            }else if(profile_image){ // if image
-
-                // const file_Extension = mime.extension(req.file.mimetype) === 'jpeg' ? 'jpg' : mime.extension(req.file.mimetype)
-
-                const image_name =  `${account_Id}.jpg`
-
-                const images_Dir = path.join(__dirname, '../../../image/account-profile')
-                const image_Path = path.join(images_Dir, image_name)
-
-                // check if directory exits
-                if (!fs.existsSync(images_Dir)) {
-                    fs.mkdirSync(images_Dir, {recursive: true})
-                }
-
-                // save image
-                fs.writeFileSync(image_Path, profile_image)
-
-                const profile_image_path = `${req.protocol}://${req.get('host')}/images/account-profile/${image_name}`
-
-                account.profile_image = profile_image_path
-            }
-            
-            await account.save()
-
-            res.status(200).json(account)
-
-        }catch(error){
-            console.log(error.message)
-            res.status(400).json({error: error.message})
+    update_Acc_Info = async (req, res) => {
+        try {
+          const account_Id = req.params.id;
+    
+          // get info from body
+          const { username, phone, underlying_condition, date_of_birth, address } =
+            req.body;
+    
+          const account = await User.findById(account_Id);
+          if (!account) {
+            return res.status(404).json({ error: "Account not found" });
+          }
+    
+          let profile_image = null;
+    
+          if (req.file) {
+            const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+              folder: "PBL6/profiles",
+            });
+    
+            profile_image = uploadResult.secure_url;
+            fs.unlinkSync(req.file.path); // Xóa file tạm sau khi upload thành công
+          }
+    
+          // update
+          if (username) {
+            account.username = username;
+          }
+          if (phone) {
+            account.phone = phone;
+          }
+          if (underlying_condition) {
+            account.underlying_condition = underlying_condition;
+          }
+          if (date_of_birth) {
+            account.date_of_birth = date_of_birth;
+          }
+          if (address) {
+            account.address = address;
+          }
+    
+          if (profile_image) {
+            account.profile_image = profile_image;
+          }
+    
+          await account.save();
+    
+          res.status(200).json(account);
+        } catch (error) {
+          console.log(error.message);
+          res.status(400).json({ error: error.message });
         }
-    }
+      };
+      
 
     soft_Delete_Account = async(req, res) =>{
         try{
@@ -429,40 +500,67 @@ class user_Controller{
 
     update_Doctor_Info = async(req, res) =>{
         try{
+            console.log("Request received with params:", req.params);
+            console.log("Request body:", req.body);
+
             // get info from body
             const {speciality, region, bio} = req.body
 
             // get id
             const account_Id = req.params.id
+            console.log("Account ID:", account_Id);
 
             // find account
             let account = await Doctor.findById(account_Id)
 
             if(!account){
+                
+                console.error("Account not found with ID:", account_Id);
                 return res.status(404).json({error: 'Account not found'})
             }
+            console.log("Account found:", account);
 
             // update
             if(speciality){
-                const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
+                console.log("Searching for speciality:", speciality);
+                const speciality_id = await Speciality.findOne({ name: speciality }, { _id: 1 });
+                // const speciality_id = await Speciality.findOne({ name: speciality.trim().toLowerCase() }, { _id: 1 });
+                console.log("ID chuyên khoa tìm được:", speciality_id);
+                if (!speciality_id) {
+                    console.error("Speciality not found:", speciality);
+                    return res.status(404).json({ error: `Speciality '${speciality}' not found` });
+                }
+                console.log("Speciality found with ID:", speciality_id);
                 account.speciality_id = speciality_id._id
             }
 
             if(region){
-                const region_id = await Region.findOne({name: region}, {_id: 1})
+                console.log("Searching for region:", region);
+                const region_id = await Region.findOne({ name: region }, { _id: 1 });
+                // const region_id = await Region.findOne({ name: region.trim().toLowerCase() }, { _id: 1 });
+                console.log("ID khu vực tìm được:", region_id);
+                if (!region_id) {
+                    console.error("Region not found:", region);
+                    return res.status(404).json({ error: `Region '${region}' not found` });
+                }
+                console.log("Region found with ID:", region_id);
                 account.region_id = region_id._id
             }
 
             if(bio){
+                console.log("Updating bio:", bio);
                 account.bio = bio
             }
-
+            console.log("Saving updated account...");
             await account.save()
+
+            console.log("Fetching updated account with populated fields...");
 
             account = await Doctor.findById(account_Id)
             .populate('speciality_id', 'name')
             .populate('region_id', 'name')
             
+            console.log("Updated account:", account);
             res.status(200).json(account)
         }catch(error){
             console.log(error.message)
@@ -475,6 +573,7 @@ class user_Controller{
             await upload_Promise_pdf(req, res)
             const proof = req.file ? req.file.buffer : null
 
+            
             // get id
             const account_Id = req.params.id
 
@@ -618,7 +717,6 @@ class user_Controller{
             if(!day || !start_time || !end_time || !hour_type){
                 throw new Error('Missing information')
             }
-
             // get id
             const account_Id = req.params.id
 
@@ -631,12 +729,14 @@ class user_Controller{
             }
             const new_Active_Hour = {day, start_time, end_time, hour_type, appointment_limit}
 
+            console.log("Excluded time frame:", excluded_time);
+            console.log("New active hour:", new_Active_Hour);
+
             const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time)
             
             if(is_overlap){
                 throw new Error('Overlapping time frame')
             }
-
             // find doctor
             const doctor = await Doctor.findById(account_Id)
 
@@ -646,7 +746,10 @@ class user_Controller{
                 time_frame.start_time === old_start_time &&
                 time_frame.end_time === old_end_time &&
                 time_frame.hour_type === old_hour_type
-            )
+            );
+            if (index === -1) {
+                throw new Error("Old time frame does not exist");
+              }
 
             // update
             doctor.active_hours[index] = new_Active_Hour
@@ -675,6 +778,10 @@ class user_Controller{
 
             // find doctor
             const doctor = await Doctor.findById(account_Id)
+
+            if (!doctor) {
+                throw new Error("Doctor not found");
+              }
 
             // find old active hour
             const index = doctor.active_hours.findIndex(time_frame =>
