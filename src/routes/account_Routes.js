@@ -5,8 +5,6 @@ const jwt = require("jsonwebtoken")
 
 const express = require('express')
 const router = express.Router()
-const multer = require('multer')
-const upload = multer().none()
 const { upload_image, uploadPDF } = require("../middleware/multer");
 
 router.post('/login', account_Controller.acc_Login)
@@ -32,7 +30,7 @@ router.post('/soft-delete-acc', account_Controller.soft_Delete_Account)
 router.post('/perma-delete-acc', account_Controller.perma_Delete_Account)
 router.post('/restore-acc', account_Controller.restore_Deleted_Account)
 router.post('/change-pass', account_Controller.change_password)
-router.post('/update-doc-info/:id', upload, account_Controller.update_Doctor_Info)
+router.post('/update-doc-info/:id', account_Controller.update_Doctor_Info)
 router.post("/upload-proof/:id", uploadPDF.single("proof"), (req, res) => {
     // Log để xác minh middleware đúng được gọi
     console.log("Middleware uploadPDF được kích hoạt");
