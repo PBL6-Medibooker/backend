@@ -2,7 +2,7 @@ const Speciality = require('../models/Speciality')
 const Doctor = require('../models/Doctor')
 const cloudinary = require('../utils/cloudinary')
 
-// const fs = require('fs')
+const fs = require('fs')
 // const path = require('path')
 // const mime = require('mime-types')
 // const sharp = require('sharp')
@@ -99,7 +99,7 @@ class speciality_Controller {
         try {
             let specialities;
             const { hidden_state } = req.body
-
+        
             // find list of speciality
             if (hidden_state == 'true') {
                 specialities = await Speciality.find({is_deleted: true})
@@ -379,6 +379,7 @@ class speciality_Controller {
             });
         }
     };
+
 }
 
 module.exports = new speciality_Controller()

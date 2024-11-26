@@ -2,6 +2,7 @@ const Post = require('../models/Post')
 const Speciality = require('../models/Speciality')
 const User = require('../models/User')
 
+
 class post_Controller{
     add_Post = async(req, res) =>{
         try{
@@ -134,8 +135,9 @@ class post_Controller{
     soft_Delete_Post = async(req, res) =>{
         try{
             const post_id = req.params.id
+            
 
-            const result = await Article.findByIdAndUpdate(
+            const result = await Post.findByIdAndUpdate(
                 post_id,
                 {is_deleted: true},
                 {new: true}
@@ -158,9 +160,9 @@ class post_Controller{
         try{
             const post_id = req.params.id
 
-            const result = await Article.findByIdAndUpdate(
+            const result = await Post.findByIdAndUpdate(
                 post_id,
-                {is_deleted: true},
+                {is_deleted: false},
                 {new: true}
             )
             .populate('user_id', 'email username __t profile_image')
@@ -181,6 +183,8 @@ class post_Controller{
         try{
             // get id list
             const post_id = req.params.id
+            console.log(post_id);
+            
 
             const result = await Post.findByIdAndDelete(post_id)
 
