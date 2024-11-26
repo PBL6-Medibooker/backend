@@ -5,11 +5,10 @@ const Speciality = require('../models/Speciality')
 const Appointment = require('../models/Appointment')
 const cloudinary = require('../utils/cloudinary')
 
-
-const fs = require('fs')
-// const path = require('path')
 // const mime = require('mime-types')
 // const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
@@ -441,19 +440,31 @@ class account_Controller{
             
             
             if (!user) {
-                return res.status(400).json({error: 'Invalid or expired token'})
+                throw new Error('Invalid or expired token')
             }
             
             const updated_user = await User.change_pass(user.email, process.env.DEFAULT_PASS, true)
     
-            res.status(200).json({
-                message: 'Password changed successfully'
-            })
+            res.sendFile(path.join(__dirname, '../utils/landing_html', 'reset-password-success.html'))
         } catch (error) {
-            if (error.name === 'TokenExpiredError') {
-                return res.status(400).json({error: 'Token has expired. Please request a new password reset.'})
-            }
-            res.status(400).json({error: error.message})
+            const errorMessage =
+            error.name === 'TokenExpiredError'
+                ? 'Token has expired. Please request a new reset link.'
+                : 'An unexpected error occurred. Please try again later.'
+
+            // Read the error HTML file
+            const filePath = path.join(__dirname, '../utils/landing_html/reset-password-error.html')
+            fs.readFile(filePath, 'utf-8', (err, html) => {
+                if (err) {
+                    return res.status(500).send('Server error')
+                }
+
+                // Replace the placeholder in the HTML with the error message
+                const updatedHtml = html.replace('{{ERROR_MESSAGE}}', errorMessage)
+
+                // Send the updated HTML
+                res.send(updatedHtml)
+            })
         }
     }
 
