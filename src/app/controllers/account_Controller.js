@@ -449,8 +449,8 @@ class account_Controller{
         } catch (error) {
             const errorMessage =
             error.name === 'TokenExpiredError'
-                ? 'Token has expired. Please request a new reset link.'
-                : 'An unexpected error occurred. Please try again later.'
+                ? 'Đường dẫn xác nhận đã hết hạn. Xin thử lại đường dẫn mới sau.'
+                : 'Đã xảy ra sự cố. Xin thử lại sau.'
 
             // Read the error HTML file
             const filePath = path.join(__dirname, '../utils/landing_html/reset-password-error.html')
