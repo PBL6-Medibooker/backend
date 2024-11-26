@@ -415,6 +415,23 @@ class appointment_Controller {
             })
         }
     }
+
+    getAllUserAppointments = async (req, res) => {
+        try {
+            const user_id = req.params.id; 
+    
+            let query = { user_id };
+    
+            const appointments = await Appointment.find(query)
+                .populate('user_id', 'username date_of_birth profile_image')
+                .populate('doctor_id', 'username profile_image speciality_id address')
+                .populate('doctor_id.speciality_id', '_id name');
+    
+            res.status(200).json(appointments);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
   
 }
 

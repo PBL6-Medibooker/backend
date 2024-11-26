@@ -44,7 +44,7 @@ const Doctor_Schema = new Schema({
       required: false 
   },
   proof: {
-      type: Buffer,
+      type: String,
       required: false
   }
 })
