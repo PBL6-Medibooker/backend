@@ -797,6 +797,8 @@ class account_Controller{
     change_Doctor_Verified_Status = async(req, res) =>{
         try{
             const {email, verified} = req.body
+            console.log(email, verified);
+            
 
             const doctor = await Doctor.findOneAndUpdate(
                 {email}, 
@@ -804,6 +806,7 @@ class account_Controller{
                 {new: true}
             ).populate('speciality_id', 'name')
             .populate('region_id', 'name')
+            console.log("Updated Doctor:", doctor);
 
             res.status(200).json(doctor)
         }catch(error){
