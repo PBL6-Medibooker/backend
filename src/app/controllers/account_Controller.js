@@ -871,9 +871,8 @@ class account_Controller{
       
       const doctorEmail = req.user;
       
-      const profileData = await Doctor.findOne({ email: doctorEmail }).select(
-        "-password"
-      ).populate("speciality_id", "name").populate("region_id", "name"); 
+      const profileData = await Doctor.findOne({ email: doctorEmail })
+      .populate("speciality_id", "name").populate("region_id", "name"); 
   
       if (!profileData) {
         return res.status(404).json({ success: false, message: "Doctor not found" });
