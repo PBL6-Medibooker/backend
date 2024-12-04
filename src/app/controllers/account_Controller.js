@@ -6,8 +6,7 @@ const Appointment = require("../models/Appointment");
 const cloudinary = require("../utils/cloudinary");
 
 const fs = require("fs");
-// const path = require('path')
-// const mime = require('mime-types')
+const path = require('path')
 // const crypto = require('crypto')
 const multer = require("multer");
 const { promisify } = require("util");
@@ -370,13 +369,13 @@ class account_Controller {
             .split("/")
             .slice(-3)
             .join("/")
-            .replace(/\.\w+$/, "");  // Extract public_id from URL
+            .replace(/\.\w+$/, ""); // Extract public_id from URL
 
           return public_Id;
         })
         .filter((public_Id) => public_Id);
 
-        const public_Proofs = accounts
+      const public_Proofs = accounts
         .map((account) => {
           const image_Url = account.proof;
 
@@ -386,8 +385,8 @@ class account_Controller {
             .split("/")
             .slice(-3)
             .join("/")
-            .replace(/\.\w+$/, "");  // Extract public_id from URL
-            
+            .replace(/\.\w+$/, ""); // Extract public_id from URL
+
           return public_Id;
         })
         .filter((public_Id) => public_Id);
@@ -432,6 +431,82 @@ class account_Controller {
     }
   };
 
+  // forgot_password = async (req, res) => {
+  //   try {
+  //     const { email } = req.body;
+  //     const account = await User.findOne({ email });
+
+  //     if (!account) {
+  //       return res.status(404).json({ error: "Account not found" });
+  //     }
+
+  //     // Generate a reset token
+  //     const reset_Token = this.create_Token(account._id, "10m");
+
+  //     const transporter = nodemailer.createTransport({
+  //       service: process.env.EMAIL_HOST,
+  //       auth: {
+  //         user: process.env.EMAIL_USER,
+  //         pass: process.env.EMAIL_PASS,
+  //       },
+  //     });
+
+  //     const reset_URL = `${req.protocol}://${req.get(
+  //       "host"
+  //     )}/acc/reset-password/${reset_Token}`;
+  //     const mail_Options = {
+  //       from: process.env.EMAIL,
+  //       to: email,
+  //       subject: "Password Reset",
+  //       html: `
+  //                       <p>Please click on the following link to reset your password:</p>
+  //                       <a href="${reset_URL}">Reset Password</a>
+  //                       <p>This link will expire in 10 minutes</p>
+  //                   `,
+  //     };
+
+  //     await transporter.sendMail(mail_Options);
+
+  //     res
+  //       .status(200)
+  //       .json({ message: "Password reset link sent to your email" });
+  //   } catch (error) {
+  //     console.log(error.message);
+  //     res.status(500).json({ error: error.message });
+  //   }
+  // };
+
+  // reset_password = async (req, res) => {
+  //   try {
+  //     const token = req.params.token;
+
+  //     // Verify the token
+  //     const decoded = jwt.verify(token, process.env.JWTSecret);
+  //     const user = await User.findById(decoded._id);
+
+  //     if (!user) {
+  //       return res.status(400).json({ error: "Invalid or expired token" });
+  //     }
+
+  //     const updated_user = await User.change_pass(
+  //       user.email,
+  //       process.env.DEFAULT_PASS,
+  //       true
+  //     );
+
+  //     res.status(200).json({
+  //       message: "Password changed successfully",
+  //     });
+  //   } catch (error) {
+  //     if (error.name === "TokenExpiredError") {
+  //       return res.status(400).json({
+  //         error: "Token has expired. Please request a new password reset.",
+  //       });
+  //     }
+  //     res.status(400).json({ error: error.message });
+  //   }
+  // };
+
   forgot_password = async (req, res) => {
     try {
       const { email } = req.body;
@@ -460,10 +535,10 @@ class account_Controller {
         to: email,
         subject: "Password Reset",
         html: `
-                        <p>Please click on the following link to reset your password:</p>
-                        <a href="${reset_URL}">Reset Password</a>
-                        <p>This link will expire in 10 minutes</p>
-                    `,
+                    <p>Please click on the following link to reset your password:</p>
+                    <a href="${reset_URL}">Reset Password</a>
+                    <p>This link will expire in 10 minutes</p>
+                `,
       };
 
       await transporter.sendMail(mail_Options);
@@ -486,7 +561,7 @@ class account_Controller {
       const user = await User.findById(decoded._id);
 
       if (!user) {
-        return res.status(400).json({ error: "Invalid or expired token" });
+        throw new Error("Invalid or expired token");
       }
 
       const updated_user = await User.change_pass(
@@ -495,16 +570,35 @@ class account_Controller {
         true
       );
 
-      res.status(200).json({
-        message: "Password changed successfully",
-      });
+      res.sendFile(
+        path.join(
+          __dirname,
+          "../utils/landing_html",
+          "reset-password-success.html"
+        )
+      );
     } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res.status(400).json({
-          error: "Token has expired. Please request a new password reset.",
-        });
-      }
-      res.status(400).json({ error: error.message });
+      const errorMessage =
+        error.name === "TokenExpiredError"
+          ? "Đường dẫn xác nhận đã hết hạn. Xin thử lại đường dẫn mới sau."
+          : "Đã xảy ra sự cố. Xin thử lại sau.";
+
+      // Read the error HTML file
+      const filePath = path.join(
+        __dirname,
+        "../utils/landing_html/reset-password-error.html"
+      );
+      fs.readFile(filePath, "utf-8", (err, html) => {
+        if (err) {
+          return res.status(500).send("Server error");
+        }
+
+        // Replace the placeholder in the HTML with the error message
+        const updatedHtml = html.replace("{{ERROR_MESSAGE}}", errorMessage);
+
+        // Send the updated HTML
+        res.send(updatedHtml);
+      });
     }
   };
 
