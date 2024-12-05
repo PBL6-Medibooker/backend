@@ -851,9 +851,7 @@ class account_Controller{
   getProfileAdmin = async (req, res) => {
     try {
       const adminEmail = req.user 
-      const adminData = await User.findOne({ email: adminEmail }).select(
-        "-password"
-      )
+      const adminData = await User.findOne({ email: adminEmail })
 
       if (!adminData) {
         return res.status(404).json({ error: "Admin profile not found" })
