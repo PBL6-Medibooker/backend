@@ -78,48 +78,48 @@ class account_Controller{
 
     acc_Signup = async (req, res) => {
         try {
-          // get info from body
-          const { email, password, username, phone, is_doc } = req.body;
-          //   const proof = req.file ? req.file.buffer : null;
-          const role = "user";
-          let acc;
-    
-          // add account
-          if (is_doc == "1") {
-            let proof = null;
-            if (req.file) {
-              // Upload file to Cloudinary
-              const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-                folder: "PBL6/proofs",
-                overwrite: true,
-              });
-    
-              // Extract proof URL and delete temporary file
-              proof = uploadResult.secure_url;
-    
-              try {
-                await fs.promises.unlink(req.file.path);
-              } catch (err) {
-                console.error("Failed to delete temp file: ", err.message);
-              }
+            // get info from body
+            const { email, password, username, phone, is_doc } = req.body
+            //   const proof = req.file ? req.file.buffer : null
+            const role = "user"
+            let acc
+        
+            // add account
+            if (is_doc == "1") {
+                let proof = null;
+                if (req.file) {
+                    // Upload file to Cloudinary
+                    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                        folder: "PBL6/proofs",
+                        overwrite: true,
+                    })
+        
+                    // Extract proof URL and delete temporary file
+                    proof = uploadResult.secure_url
+        
+                    try {
+                        await fs.promises.unlink(req.file.path)
+                    } catch (err) {
+                        console.error("Failed to delete temp file: ", err.message)
+                    }
+                }
+        
+                acc = await Doctor.add_Doctor(email, password, username, phone, proof)
+            } else {
+                // console.log('not doc')
+                acc = await User.add_User(email, password, username, phone)
             }
-    
-            acc = await Doctor.add_Doctor(email, password, username, phone, proof);
-          } else {
-            // console.log('not doc')
-            acc = await User.add_User(email, password, username, phone);
-          }
-          // console.log(acc)
-    
-          // create token and respone
-          const token = this.create_Token(acc._id);
-          res.status(201).json({ email, token, role });
+            // console.log(acc)
+        
+            // create token and respone
+            const token = this.create_Token(acc._id)
+
+            res.status(201).json({ email, token, role })
         } catch (error) {
-          //if user account
-          console.log(error.message);
-          res.status(400).json({ error: error.message });
+            console.log(error.message)
+            res.status(400).json({ error: error.message })
         }
-      };
+    }
 
     get_Account_List = async(req, res) =>{
         try{
@@ -456,7 +456,7 @@ class account_Controller{
                 : 'Đã xảy ra sự cố. Xin thử lại sau.'
 
             // Read the error HTML file
-            const filePath = path.join(__dirname, '../utils/landing_html/reset-password-error.html')
+            const filePath = path.join(__dirname, '../utils/landing_html/landing-error.html')
             fs.readFile(filePath, 'utf-8', (err, html) => {
                 if (err) {
                     return res.status(500).send('Server error')
@@ -534,48 +534,47 @@ class account_Controller{
 
     upload_Doctor_Proof = async (req, res) => {
         try {
-          // Check if file exists
-          if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
-          }
-    
-          const account_Id = req.params.id;
-          const pdf_name = `${account_Id}_${Date.now()}`;
-    
-          // Upload file to Cloudinary
-          const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-            folder: "PBL6/proofs",
-            public_id: pdf_name,
-            overwrite: true,
-          });
-    
-          // Extract proof URL and delete temporary file
-          const proof = uploadResult.secure_url;
-          try {
-            await fs.promises.unlink(req.file.path);
-          } catch (err) {
-            console.error("Failed to delete temp file: ", err.message);
-          }
-    
-          // Update database
-          const account = await Doctor.findByIdAndUpdate(
-            account_Id,
-            { proof },
-            { new: true }
-          );
-    
-          if (!account) {
-            return res.status(404).json({ error: "Doctor not found" });
-          }
-    
-          res.status(200).json(account);
+            // Check if file exists
+            if (!req.file) {
+                return res.status(400).json({ error: "No file uploaded" })
+            }
+        
+            const account_Id = req.params.id;
+            const pdf_name = `${account_Id}_${Date.now()}`;
+        
+            // Upload file to Cloudinary
+            const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                folder: "PBL6/proofs",
+                public_id: pdf_name,
+                overwrite: true,
+            })
+        
+            // Extract proof URL and delete temporary file
+            const proof = uploadResult.secure_url
+            try {
+                await fs.promises.unlink(req.file.path)
+            } catch (err) {
+                console.error("Failed to delete temp file: ", err.message)
+            }
+        
+            // Update database
+            const account = await Doctor.findByIdAndUpdate(
+                account_Id,
+                { proof },
+                { new: true }
+            )
+        
+            if (!account) {
+                return res.status(404).json({ error: "Doctor not found" })
+            }
+        
+            res.status(200).json(account);
         } catch (error) {
-          console.error("Error: ", error.message);
-          res.status(500).json({ error: error.message });
+            console.error("Error: ", error.message)
+            res.status(500).json({ error: error.message })
         }
-      };
+    }
     
-
     get_Doctor_Active_Hour_List = async(req, res) =>{
         try{
             // get id
@@ -859,148 +858,148 @@ class account_Controller{
         }
     }
     
-  getProfileAdmin = async (req, res) => {
-    try {
-      const adminEmail = req.user 
-      const adminData = await User.findOne({ email: adminEmail }).select(
-        "-password"
-      )
+    getProfileAdmin = async (req, res) => {
+        try {
+            const adminEmail = req.user 
+            const adminData = await User.findOne({ email: adminEmail }).select(
+                "-password"
+            )
 
-      if (!adminData) {
-        return res.status(404).json({ error: "Admin profile not found" })
-      }
+            if (!adminData) {
+                return res.status(404).json({ error: "Admin profile not found" })
+            }
 
-      res.json({ success: true, adminData })
-    } catch (error) {
-      console.log(error.message)
-      res.status(400).json({ error: error.message })
+            res.json({ success: true, adminData })
+        } catch (error) {
+            console.log(error.message)
+            res.status(400).json({ error: error.message })
+        }
     }
-  }
 
-  doctorProfile = async (req, res) => {
-    try {
-      
-      const doctorEmail = req.user;
-      
-      const profileData = await Doctor.findOne({ email: doctorEmail }).select(
-        "-password"
-      ).populate("speciality_id", "name").populate("region_id", "name"); 
-  
-      if (!profileData) {
-        return res.status(404).json({ success: false, message: "Doctor not found" });
-      }
-  
-      res.json({ success: true, profileData });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ success: false, message: "Server error" }); 
-    }
-  };
+    doctorProfile = async (req, res) => {
+        try {
+        
+            const doctorEmail = req.user;
+            
+            const profileData = await Doctor.findOne({ email: doctorEmail }).select(
+                "-password"
+            ).populate("speciality_id", "name").populate("region_id", "name"); 
+        
+            if (!profileData) {
+                return res.status(404).json({ success: false, message: "Doctor not found" });
+            }
+        
+            res.json({ success: true, profileData });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, message: "Server error" }); 
+        }
+    };
 
-  getTopDoctors = async (req, res) => {
-    try {
-      const result = await Appointment.aggregate([
-        {
-          
-          $group: {
-            _id: "$doctor_id", // Group by doctor_id
-            appointmentCount: { $sum: 1 }, // Count the appointments
-          },
-        },
-        {
-          $sort: { appointmentCount: -1 },
-        },
-        {
-         
-          $limit: 5,
-        },
-        {
+    getTopDoctors = async (req, res) => {
+        try {
+            const result = await Appointment.aggregate([
+                {
+                
+                $group: {
+                    _id: "$doctor_id", // Group by doctor_id
+                    appointmentCount: { $sum: 1 }, // Count the appointments
+                },
+                },
+                {
+                $sort: { appointmentCount: -1 },
+                },
+                {
+                
+                $limit: 5,
+                },
+                {
+                
+                $lookup: {
+                    from: "users", 
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "doctorDetails",
+                },
+                },
+                {
+                
+                $project: {
+                    doctorId: "$_id",
+                    appointmentCount: 1,
+                    doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
+                },
+                },
+            ]);
         
-          $lookup: {
-            from: "users", 
-            localField: "_id",
-            foreignField: "_id",
-            as: "doctorDetails",
-          },
-        },
-        {
+            if (!result.length) {
+                return res.status(404).json({ message: "No appointments found." });
+            }
         
-          $project: {
-            doctorId: "$_id",
-            appointmentCount: 1,
-            doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
-          },
-        },
-      ]);
+            return res.status(200).json({ data: result });
+        } catch (err) {
+            console.error("Error:", err);
+            return res.status(500).json({
+                error: "An error occurred.",
+            });
+        }
+    };
   
-      if (!result.length) {
-        return res.status(404).json({ message: "No appointments found." });
-      }
-  
-      return res.status(200).json({ data: result });
-    } catch (err) {
-      console.error("Error:", err);
-      return res.status(500).json({
-        error: "An error occurred.",
-      });
-    }
-  };
-  
-  getTopUsers = async (req, res) => {
-    try {
-      const result = await Appointment.aggregate([
-        {
-         
-          $match: {
-            is_deleted: { $ne: true }, 
-          },
-        },
-        {
+    getTopUsers = async (req, res) => {
+        try {
+            const result = await Appointment.aggregate([
+                {
+                
+                $match: {
+                    is_deleted: { $ne: true }, 
+                },
+                },
+                {
+                
+                $group: {
+                    _id: "$user_id",
+                    appointmentCount: { $sum: 1 },
+                },
+                },
+                {
+                
+                $sort: { appointmentCount: -1 },
+                },
+                {
+                
+                $limit: 5,
+                },
+                {
+                
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "userDetails",
+                },
+                },
+                {
+                
+                $project: {
+                    userId: "$_id",
+                    appointmentCount: 1,
+                    userDetails: { $arrayElemAt: ["$userDetails", 0] }, 
+                },
+                },
+            ]);
         
-          $group: {
-            _id: "$user_id",
-            appointmentCount: { $sum: 1 },
-          },
-        },
-        {
-         
-          $sort: { appointmentCount: -1 },
-        },
-        {
-          
-          $limit: 5,
-        },
-        {
+            if (!result.length) {
+                return res.status(404).json({ message: "No users found." });
+            }
         
-          $lookup: {
-            from: "users",
-            localField: "_id",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-        {
-          
-          $project: {
-            userId: "$_id",
-            appointmentCount: 1,
-            userDetails: { $arrayElemAt: ["$userDetails", 0] }, 
-          },
-        },
-      ]);
-  
-      if (!result.length) {
-        return res.status(404).json({ message: "No users found." });
-      }
-  
-      return res.status(200).json({ data: result });
-    } catch (err) {
-      console.error("Error:", err);
-      return res.status(500).json({
-        error: "An error occurred.",
-      });
-    }
-  };
+            return res.status(200).json({ data: result });
+        } catch (err) {
+            console.error("Error:", err);
+            return res.status(500).json({
+                error: "An error occurred.",
+            });
+        }
+    };
 }
 
 module.exports = new account_Controller
