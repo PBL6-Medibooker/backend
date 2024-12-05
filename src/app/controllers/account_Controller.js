@@ -343,25 +343,28 @@ class account_Controller{
             }
 
             // Find the accounts to delete and retrieve their profile image public_ids
-            const accounts = await User.find({ _id: { $in: account_Ids } }, 'profile_image')
+            const accounts = await User.find({ _id: { $in: account_Ids } }, 'profile_image proof')
 
             // Prepare an array of public_ids to delete from Cloudinary
-            const public_Ids = accounts.map(account => {
-                const image_Url = account.profile_image
+            const public_Ids = accounts.flatMap(account => [
 
-                if (!image_Url) return null
+                // Extract public_id from profile_image
+                account.profile_image ? account.profile_image.split('/').slice(-3).join('/') : null,
 
-                const url_Parts = image_Url.split('/')
-                const public_Id = url_Parts.slice(-3).join('/')// Extract public_id from URL
-                return public_Id
-            }).filter(public_Id => public_Id)
+                // Extract public_id from proof
+                account.proof ? account.proof.split('/').slice(-3).join('/') : null,
+
+            ].filter(Boolean))
 
             // Delete images from Cloudinary
             if (public_Ids.length > 0) {
                 const cloudinary_Delete_Promises = public_Ids.map(public_Id => {
-                    return new Promise((resolve, reject) => {
+                    return new Promise((resolve) => {
                         cloudinary.uploader.destroy(public_Id, (error, result) => {
-                            if (error) return reject(error)
+                            if (error) {
+                                console.error(`Failed to delete ${public_Id}:`, error.message)
+                                return resolve(null)
+                            }
                             resolve(result)
                         })
                     })
@@ -413,11 +416,11 @@ class account_Controller{
             const mail_Options = {
                 from: process.env.EMAIL,
                 to: email,
-                subject: 'Password Reset',
+                subject: 'Đặt lại mật khẩu',
                 html: `
-                        <p>Please click on the following link to reset your password:</p>
-                        <a href="${reset_URL}">Reset Password</a>
-                        <p>This link will expire in 10 minutes</p>
+                        <p>Xin hãy nhấn vào đường dẫn bên dưới để cài đặt lại mật khẩu:</p>
+                        <a href="${reset_URL}">Đặt lại mật khẩu</a>
+                        <p>Đường dẫn sẽ mất hiệu lực sau 10 phút</p>
                     `
             }
     
