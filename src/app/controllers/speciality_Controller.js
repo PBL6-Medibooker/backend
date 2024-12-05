@@ -282,10 +282,13 @@ class speciality_Controller {
             // Delete images from Cloudinary
             if (public_Ids.length > 0) {
                 const cloudinary_Delete_Promises = public_Ids.map(public_Id => {
-                    return new Promise((resolve, reject) => {
+                    return new Promise((resolve) => {
                         cloudinary.uploader.destroy(public_Id, (error, result) => {
                             console.log({ error, result })
-                            if (error) return reject(error)
+                            if (error) {
+                                console.error(`Failed to delete ${public_Id}:`, error.message)
+                                return resolve(null)
+                            }
                             resolve(result)
                         })
                     })
@@ -304,8 +307,8 @@ class speciality_Controller {
                 deletedCount: result.deletedCount,
             })
         } catch (error) {
-        console.log(error.message);
-        res.status(400).json({ error: error.message });
+            console.log(error.message)
+            res.status(400).json({ error: error.message })
         }
     }
 
