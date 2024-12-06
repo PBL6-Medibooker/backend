@@ -80,8 +80,8 @@ User.statics.add_User = async function(email, password, username, phone) {
         email, 
         password: hass, 
         username, 
-        phone, 
-        profile_image: default_profile_img})
+        phone
+    })
 
     return user
 }

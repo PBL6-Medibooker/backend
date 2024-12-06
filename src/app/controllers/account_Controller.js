@@ -5,11 +5,10 @@ const Speciality = require('../models/Speciality')
 const Appointment = require('../models/Appointment')
 const cloudinary = require('../utils/cloudinary')
 
-
-const fs = require('fs')
-// const path = require('path')
 // const mime = require('mime-types')
 // const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
 const multer = require('multer')
 const { promisify } = require('util')
 const jwt = require('jsonwebtoken')
@@ -79,48 +78,48 @@ class account_Controller{
 
     acc_Signup = async (req, res) => {
         try {
-          // get info from body
-          const { email, password, username, phone, is_doc } = req.body;
-          //   const proof = req.file ? req.file.buffer : null;
-          const role = "user";
-          let acc;
-    
-          // add account
-          if (is_doc == "1") {
-            let proof = null;
-            if (req.file) {
-              // Upload file to Cloudinary
-              const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-                folder: "PBL6/proofs",
-                overwrite: true,
-              });
-    
-              // Extract proof URL and delete temporary file
-              proof = uploadResult.secure_url;
-    
-              try {
-                await fs.promises.unlink(req.file.path);
-              } catch (err) {
-                console.error("Failed to delete temp file: ", err.message);
-              }
+            // get info from body
+            const { email, password, username, phone, is_doc } = req.body
+            //   const proof = req.file ? req.file.buffer : null
+            const role = "user"
+            let acc
+        
+            // add account
+            if (is_doc == "1") {
+                let proof = null;
+                if (req.file) {
+                    // Upload file to Cloudinary
+                    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                        folder: "PBL6/proofs",
+                        overwrite: true,
+                    })
+        
+                    // Extract proof URL and delete temporary file
+                    proof = uploadResult.secure_url
+        
+                    try {
+                        await fs.promises.unlink(req.file.path)
+                    } catch (err) {
+                        console.error("Failed to delete temp file: ", err.message)
+                    }
+                }
+        
+                acc = await Doctor.add_Doctor(email, password, username, phone, proof)
+            } else {
+                // console.log('not doc')
+                acc = await User.add_User(email, password, username, phone)
             }
-    
-            acc = await Doctor.add_Doctor(email, password, username, phone, proof);
-          } else {
-            // console.log('not doc')
-            acc = await User.add_User(email, password, username, phone);
-          }
-          // console.log(acc)
-    
-          // create token and respone
-          const token = this.create_Token(acc._id);
-          res.status(201).json({ email, token, role });
+            // console.log(acc)
+        
+            // create token and respone
+            const token = this.create_Token(acc._id)
+
+            res.status(201).json({ email, token, role })
         } catch (error) {
-          //if user account
-          console.log(error.message);
-          res.status(400).json({ error: error.message });
+            console.log(error.message)
+            res.status(400).json({ error: error.message })
         }
-      };
+    }
 
     get_Account_List = async(req, res) =>{
         try{
@@ -344,25 +343,28 @@ class account_Controller{
             }
 
             // Find the accounts to delete and retrieve their profile image public_ids
-            const accounts = await User.find({ _id: { $in: account_Ids } }, 'profile_image')
+            const accounts = await User.find({ _id: { $in: account_Ids } }, 'profile_image proof')
 
             // Prepare an array of public_ids to delete from Cloudinary
-            const public_Ids = accounts.map(account => {
-                const image_Url = account.profile_image
+            const public_Ids = accounts.flatMap(account => [
 
-                if (!image_Url) return null
+                // Extract public_id from profile_image
+                account.profile_image ? account.profile_image.split('/').slice(-3).join('/') : null,
 
-                const url_Parts = image_Url.split('/')
-                const public_Id = url_Parts.slice(-3).join('/')// Extract public_id from URL
-                return public_Id
-            }).filter(public_Id => public_Id)
+                // Extract public_id from proof
+                account.proof ? account.proof.split('/').slice(-3).join('/') : null,
+
+            ].filter(Boolean))
 
             // Delete images from Cloudinary
             if (public_Ids.length > 0) {
                 const cloudinary_Delete_Promises = public_Ids.map(public_Id => {
-                    return new Promise((resolve, reject) => {
+                    return new Promise((resolve) => {
                         cloudinary.uploader.destroy(public_Id, (error, result) => {
-                            if (error) return reject(error)
+                            if (error) {
+                                console.error(`Failed to delete ${public_Id}:`, error.message)
+                                return resolve(null)
+                            }
                             resolve(result)
                         })
                     })
@@ -414,11 +416,11 @@ class account_Controller{
             const mail_Options = {
                 from: process.env.EMAIL,
                 to: email,
-                subject: 'Password Reset',
+                subject: 'Đặt lại mật khẩu',
                 html: `
-                        <p>Please click on the following link to reset your password:</p>
-                        <a href="${reset_URL}">Reset Password</a>
-                        <p>This link will expire in 10 minutes</p>
+                        <p>Xin hãy nhấn vào đường dẫn bên dưới để cài đặt lại mật khẩu:</p>
+                        <a href="${reset_URL}">Đặt lại mật khẩu</a>
+                        <p>Đường dẫn sẽ mất hiệu lực sau 10 phút</p>
                     `
             }
     
@@ -441,19 +443,31 @@ class account_Controller{
             
             
             if (!user) {
-                return res.status(400).json({error: 'Invalid or expired token'})
+                throw new Error('Invalid or expired token')
             }
             
             const updated_user = await User.change_pass(user.email, process.env.DEFAULT_PASS, true)
     
-            res.status(200).json({
-                message: 'Password changed successfully'
-            })
+            res.sendFile(path.join(__dirname, '../utils/landing_html', 'reset-password-success.html'))
         } catch (error) {
-            if (error.name === 'TokenExpiredError') {
-                return res.status(400).json({error: 'Token has expired. Please request a new password reset.'})
-            }
-            res.status(400).json({error: error.message})
+            const errorMessage =
+            error.name === 'TokenExpiredError'
+                ? 'Đường dẫn xác nhận đã hết hạn. Xin thử lại đường dẫn mới sau.'
+                : 'Đã xảy ra sự cố. Xin thử lại sau.'
+
+            // Read the error HTML file
+            const filePath = path.join(__dirname, '../utils/landing_html/landing-error.html')
+            fs.readFile(filePath, 'utf-8', (err, html) => {
+                if (err) {
+                    return res.status(500).send('Server error')
+                }
+
+                // Replace the placeholder in the HTML with the error message
+                const updatedHtml = html.replace('{{ERROR_MESSAGE}}', errorMessage)
+
+                // Send the updated HTML
+                res.send(updatedHtml)
+            })
         }
     }
 
@@ -520,48 +534,47 @@ class account_Controller{
 
     upload_Doctor_Proof = async (req, res) => {
         try {
-          // Check if file exists
-          if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
-          }
-    
-          const account_Id = req.params.id;
-          const pdf_name = `${account_Id}_${Date.now()}`;
-    
-          // Upload file to Cloudinary
-          const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-            folder: "PBL6/proofs",
-            public_id: pdf_name,
-            overwrite: true,
-          });
-    
-          // Extract proof URL and delete temporary file
-          const proof = uploadResult.secure_url;
-          try {
-            await fs.promises.unlink(req.file.path);
-          } catch (err) {
-            console.error("Failed to delete temp file: ", err.message);
-          }
-    
-          // Update database
-          const account = await Doctor.findByIdAndUpdate(
-            account_Id,
-            { proof },
-            { new: true }
-          );
-    
-          if (!account) {
-            return res.status(404).json({ error: "Doctor not found" });
-          }
-    
-          res.status(200).json(account);
+            // Check if file exists
+            if (!req.file) {
+                return res.status(400).json({ error: "No file uploaded" })
+            }
+        
+            const account_Id = req.params.id;
+            const pdf_name = `${account_Id}_${Date.now()}`;
+        
+            // Upload file to Cloudinary
+            const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                folder: "PBL6/proofs",
+                public_id: pdf_name,
+                overwrite: true,
+            })
+        
+            // Extract proof URL and delete temporary file
+            const proof = uploadResult.secure_url
+            try {
+                await fs.promises.unlink(req.file.path)
+            } catch (err) {
+                console.error("Failed to delete temp file: ", err.message)
+            }
+        
+            // Update database
+            const account = await Doctor.findByIdAndUpdate(
+                account_Id,
+                { proof },
+                { new: true }
+            )
+        
+            if (!account) {
+                return res.status(404).json({ error: "Doctor not found" })
+            }
+        
+            res.status(200).json(account);
         } catch (error) {
-          console.error("Error: ", error.message);
-          res.status(500).json({ error: error.message });
+            console.error("Error: ", error.message)
+            res.status(500).json({ error: error.message })
         }
-      };
+    }
     
-
     get_Doctor_Active_Hour_List = async(req, res) =>{
         try{
             // get id
@@ -853,24 +866,23 @@ class account_Controller{
       const adminEmail = req.user 
       const adminData = await User.findOne({ email: adminEmail })
 
-      if (!adminData) {
-        return res.status(404).json({ error: "Admin profile not found" })
-      }
+            if (!adminData) {
+                return res.status(404).json({ error: "Admin profile not found" })
+            }
 
-      res.json({ success: true, adminData })
-    } catch (error) {
-      console.log(error.message)
-      res.status(400).json({ error: error.message })
+            res.json({ success: true, adminData })
+        } catch (error) {
+            console.log(error.message)
+            res.status(400).json({ error: error.message })
+        }
     }
-  }
 
   doctorProfile = async (req, res) => {
     try {
       
       const doctorEmail = req.user;
       
-      const profileData = await Doctor.findOne({ email: doctorEmail })
-      .populate("speciality_id", "name").populate("region_id", "name"); 
+      const profileData = await Doctor.findOne({ email: doctorEmail }).populate("speciality_id", "name").populate("region_id", "name"); 
   
       if (!profileData) {
         return res.status(404).json({ success: false, message: "Doctor not found" });
@@ -883,110 +895,110 @@ class account_Controller{
     }
   };
 
-  getTopDoctors = async (req, res) => {
-    try {
-      const result = await Appointment.aggregate([
-        {
-          
-          $group: {
-            _id: "$doctor_id", // Group by doctor_id
-            appointmentCount: { $sum: 1 }, // Count the appointments
-          },
-        },
-        {
-          $sort: { appointmentCount: -1 },
-        },
-        {
-         
-          $limit: 5,
-        },
-        {
+    getTopDoctors = async (req, res) => {
+        try {
+            const result = await Appointment.aggregate([
+                {
+                
+                $group: {
+                    _id: "$doctor_id", // Group by doctor_id
+                    appointmentCount: { $sum: 1 }, // Count the appointments
+                },
+                },
+                {
+                $sort: { appointmentCount: -1 },
+                },
+                {
+                
+                $limit: 5,
+                },
+                {
+                
+                $lookup: {
+                    from: "users", 
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "doctorDetails",
+                },
+                },
+                {
+                
+                $project: {
+                    doctorId: "$_id",
+                    appointmentCount: 1,
+                    doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
+                },
+                },
+            ]);
         
-          $lookup: {
-            from: "users", 
-            localField: "_id",
-            foreignField: "_id",
-            as: "doctorDetails",
-          },
-        },
-        {
+            if (!result.length) {
+                return res.status(404).json({ message: "No appointments found." });
+            }
         
-          $project: {
-            doctorId: "$_id",
-            appointmentCount: 1,
-            doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
-          },
-        },
-      ]);
+            return res.status(200).json({ data: result });
+        } catch (err) {
+            console.error("Error:", err);
+            return res.status(500).json({
+                error: "An error occurred.",
+            });
+        }
+    };
   
-      if (!result.length) {
-        return res.status(404).json({ message: "No appointments found." });
-      }
-  
-      return res.status(200).json({ data: result });
-    } catch (err) {
-      console.error("Error:", err);
-      return res.status(500).json({
-        error: "An error occurred.",
-      });
-    }
-  };
-  
-  getTopUsers = async (req, res) => {
-    try {
-      const result = await Appointment.aggregate([
-        {
-         
-          $match: {
-            is_deleted: { $ne: true }, 
-          },
-        },
-        {
+    getTopUsers = async (req, res) => {
+        try {
+            const result = await Appointment.aggregate([
+                {
+                
+                $match: {
+                    is_deleted: { $ne: true }, 
+                },
+                },
+                {
+                
+                $group: {
+                    _id: "$user_id",
+                    appointmentCount: { $sum: 1 },
+                },
+                },
+                {
+                
+                $sort: { appointmentCount: -1 },
+                },
+                {
+                
+                $limit: 5,
+                },
+                {
+                
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "userDetails",
+                },
+                },
+                {
+                
+                $project: {
+                    userId: "$_id",
+                    appointmentCount: 1,
+                    userDetails: { $arrayElemAt: ["$userDetails", 0] }, 
+                },
+                },
+            ]);
         
-          $group: {
-            _id: "$user_id",
-            appointmentCount: { $sum: 1 },
-          },
-        },
-        {
-         
-          $sort: { appointmentCount: -1 },
-        },
-        {
-          
-          $limit: 5,
-        },
-        {
+            if (!result.length) {
+                return res.status(404).json({ message: "No users found." });
+            }
         
-          $lookup: {
-            from: "users",
-            localField: "_id",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-        {
-          
-          $project: {
-            userId: "$_id",
-            appointmentCount: 1,
-            userDetails: { $arrayElemAt: ["$userDetails", 0] }, 
-          },
-        },
-      ]);
-  
-      if (!result.length) {
-        return res.status(404).json({ message: "No users found." });
-      }
-  
-      return res.status(200).json({ data: result });
-    } catch (err) {
-      console.error("Error:", err);
-      return res.status(500).json({
-        error: "An error occurred.",
-      });
-    }
-  };
+            return res.status(200).json({ data: result });
+        } catch (err) {
+            console.error("Error:", err);
+            return res.status(500).json({
+                error: "An error occurred.",
+            });
+        }
+    };
 }
 
 module.exports = new account_Controller

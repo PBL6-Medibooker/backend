@@ -432,6 +432,7 @@ class post_Controller{
                         userId: "$_id",
                         totalComments: 1,
                         "userDetails.username": 1,
+                        "userDetails.profile_image": 1,
                         "userDetails._id": 1
                     }
                 }
