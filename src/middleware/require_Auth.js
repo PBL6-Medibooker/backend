@@ -53,12 +53,6 @@ require("dotenv").config()
         
             }catch (error){
                 console.log(error)
-                // if (error.name === 'TokenExpiredError') {
-                //     return res.status(401).json({
-                //         error: 'Token expired',
-                //         logout: true, 
-                //     })
-                // }
                 return res.status(404).json({error: "Request not authorized"})
             }
         }
