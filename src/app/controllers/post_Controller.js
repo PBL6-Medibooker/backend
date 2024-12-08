@@ -18,14 +18,26 @@ class post_Controller{
                 return res.status(404).json({error: 'Speciality not found'})
             }
 
-            const post = await Post.create({
-                user_id: account._id, 
-                speciality_id: speciality.id, 
-                post_title, 
+            // const post = await Post.create({
+            //     user_id: account._id, 
+            //     speciality_id: speciality.id, 
+            //     post_title, 
+            //     post_content
+            // })
+            // .populate('user_id', 'email username __t profile_image')
+            // .populate('speciality_id', 'name')
+
+            const createdPost = await Post.create({
+                user_id: account._id,
+                speciality_id: speciality._id,
+                post_title,
                 post_content
-            })
-            .populate('user_id', 'email username __t profile_image')
-            .populate('speciality_id', 'name')
+            });
+    
+            // Populate the created post
+            const post = await Post.findById(createdPost._id)
+                .populate('user_id', 'email username __t profile_image')
+                .populate('speciality_id', 'name');
 
             res.status(200).json(post)
         }catch(error){
@@ -319,6 +331,128 @@ class post_Controller{
             res.status(400).json({error: error.message})
         }
     }
+
+     getTop5MostCommentedPosts = async (req, res) => {
+        try {
+            const topPosts = await Post.aggregate([
+                {
+                    $match: {
+                        is_deleted: false
+                    }
+                },
+                {
+                    $addFields: {
+                        commentCount: { $size: "$post_comments" }
+                    }
+                },
+              
+                {
+                    $sort: { commentCount: -1 }
+                },
+              
+                {
+                    $limit: 5
+                },
+              
+                {
+                    $lookup: {
+                        from: 'users', 
+                        localField: 'user_id',
+                        foreignField: '_id',
+                        as: 'userDetails'
+                    }
+                },
+                
+                {
+                    $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true }
+                },
+               
+                {
+                    $project: {
+                        post_title: 1,
+                        post_content: 1,
+                        commentCount: 1,
+                        "userDetails.name": 1,
+                        "userDetails._id": 1
+                    }
+                }
+            ]);
+    
+           
+            return res.status(200).json({
+                success: true,
+                data: topPosts
+            });
+        } catch (error) {
+            console.error("Error:", error);
+
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    };
+
+    getUserWithMostComments = async (req, res) => {
+        try {
+            const topCommenter = await Post.aggregate([
+                // {
+                //     $match: {
+                //         is_deleted: false 
+                //     }
+                // },
+                {
+                    $unwind: "$post_comments" 
+                },
+                {
+                    $group: {
+                        _id: "$post_comments.replier",
+                        totalComments: { $sum: 1 } 
+                    }
+                },
+                {
+                    $sort: { totalComments: -1 } 
+                },
+                {
+                    $limit: 5 
+                },
+                {
+                    $lookup: {
+                        from: 'users', 
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'userDetails'
+                    }
+                },
+                {
+                    $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true }
+                },
+                {
+                    $project: {
+                        userId: "$_id",
+                        totalComments: 1,
+                        "userDetails.username": 1,
+                        "userDetails.profile_image": 1,
+                        "userDetails._id": 1
+                    }
+                }
+            ]);
+    
+            return res.status(200).json({
+                success: true,
+                data: topCommenter
+            });
+        } catch (error) {
+            console.error("Error:", error);
+    
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    };
+    
+    
 }
 
 module.exports = new post_Controller

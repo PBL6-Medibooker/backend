@@ -810,6 +810,8 @@ class account_Controller{
     change_Doctor_Verified_Status = async(req, res) =>{
         try{
             const {email, verified} = req.body
+            console.log(email, verified);
+            
 
             const doctor = await Doctor.findOneAndUpdate(
                 {email}, 
@@ -817,6 +819,7 @@ class account_Controller{
                 {new: true}
             ).populate('speciality_id', 'name')
             .populate('region_id', 'name')
+            console.log("Updated Doctor:", doctor);
 
             res.status(200).json(doctor)
         }catch(error){
@@ -858,12 +861,10 @@ class account_Controller{
         }
     }
     
-    getProfileAdmin = async (req, res) => {
-        try {
-            const adminEmail = req.user 
-            const adminData = await User.findOne({ email: adminEmail }).select(
-                "-password"
-            )
+  getProfileAdmin = async (req, res) => {
+    try {
+      const adminEmail = req.user 
+      const adminData = await User.findOne({ email: adminEmail })
 
             if (!adminData) {
                 return res.status(404).json({ error: "Admin profile not found" })
@@ -876,25 +877,23 @@ class account_Controller{
         }
     }
 
-    doctorProfile = async (req, res) => {
-        try {
-        
-            const doctorEmail = req.user;
-            
-            const profileData = await Doctor.findOne({ email: doctorEmail }).select(
-                "-password"
-            ).populate("speciality_id", "name").populate("region_id", "name"); 
-        
-            if (!profileData) {
-                return res.status(404).json({ success: false, message: "Doctor not found" });
-            }
-        
-            res.json({ success: true, profileData });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ success: false, message: "Server error" }); 
-        }
-    };
+  doctorProfile = async (req, res) => {
+    try {
+      
+      const doctorEmail = req.user;
+      
+      const profileData = await Doctor.findOne({ email: doctorEmail }).populate("speciality_id", "name").populate("region_id", "name"); 
+  
+      if (!profileData) {
+        return res.status(404).json({ success: false, message: "Doctor not found" });
+      }
+  
+      res.json({ success: true, profileData });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: "Server error" }); 
+    }
+  };
 
     getTopDoctors = async (req, res) => {
         try {
