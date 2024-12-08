@@ -61,6 +61,14 @@ class account_Controller{
             let acc
             acc = await User.login(email, password)
 
+            if (acc.is_deleted) {
+                // console.log("Login failed. Account has been soft-deleted: ", email);
+                return res.status(403).json({
+                    error:
+                        "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+                });
+            }
+
             const token = this.create_Token(acc._id)
             const role = acc.role
             
