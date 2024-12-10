@@ -6,7 +6,7 @@ const Appointment = require("../models/Appointment");
 const cloudinary = require("../utils/cloudinary");
 
 const fs = require("fs");
-const path = require('path')
+const path = require("path");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
@@ -320,20 +320,24 @@ class account_Controller {
         "profile_image proof"
       );
 
-      const public_Ids = accounts.flatMap(account => [
-        account.profile_image ? account.profile_image.split('/').slice(-3).join('/') : null,
-        account.proof ? account.proof.split('/').slice(-3).join('/') : null,
-      ].filter(Boolean))
-      
+      const public_Ids = accounts.flatMap((account) =>
+        [
+          account.profile_image
+            ? account.profile_image.split("/").slice(-3).join("/")
+            : null,
+          account.proof ? account.proof.split("/").slice(-3).join("/") : null,
+        ].filter(Boolean)
+      );
+
       // Delete images from Cloudinary
       if (public_Ids.length > 0) {
         const cloudinary_Delete_Promises = public_Ids.map((public_Id) => {
           return new Promise((resolve, reject) => {
             cloudinary.uploader.destroy(public_Id, (error, result) => {
               if (error) {
-                console.error(`Failed to delete ${public_Id}:`, error.message)
-                return resolve(null)
-            }
+                console.error(`Failed to delete ${public_Id}:`, error.message);
+                return resolve(null);
+              }
               resolve(result);
             });
           });
@@ -896,115 +900,107 @@ class account_Controller {
 
   getTopDoctors = async (req, res) => {
     try {
-        const result = await Appointment.aggregate([
-            {
-            
-            $group: {
-                _id: "$doctor_id", // Group by doctor_id
-                appointmentCount: { $sum: 1 }, // Count the appointments
-            },
-            },
-            {
-            $sort: { appointmentCount: -1 },
-            },
-            {
-            
-            $limit: 5,
-            },
-            {
-            
-            $lookup: {
-                from: "users", 
-                localField: "_id",
-                foreignField: "_id",
-                as: "doctorDetails",
-            },
-            },
-            {
-            
-            $project: {
-                doctorId: "$_id",
-                appointmentCount: 1,
-                doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
-            },
-            },
-        ]);
-    
-        if (!result.length) {
-            return res.status(404).json({ message: "No appointments found." });
-        }
-    
-        return res.status(200).json({ data: result });
-    } catch (err) {
-        console.error("Error:", err);
-        return res.status(500).json({
-            error: "An error occurred.",
-        });
-    }
-};
+      const result = await Appointment.aggregate([
+        {
+          $group: {
+            _id: "$doctor_id", // Group by doctor_id
+            appointmentCount: { $sum: 1 }, // Count the appointments
+          },
+        },
+        {
+          $sort: { appointmentCount: -1 },
+        },
+        {
+          $limit: 5,
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "doctorDetails",
+          },
+        },
+        {
+          $project: {
+            doctorId: "$_id",
+            appointmentCount: 1,
+            doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] },
+          },
+        },
+      ]);
 
-getTopUsers = async (req, res) => {
-    try {
-        const result = await Appointment.aggregate([
-            {
-            
-            $match: {
-                is_deleted: { $ne: true }, 
-            },
-            },
-            {
-            
-            $group: {
-                _id: "$user_id",
-                appointmentCount: { $sum: 1 },
-            },
-            },
-            {
-            
-            $sort: { appointmentCount: -1 },
-            },
-            {
-            
-            $limit: 5,
-            },
-            {
-            
-            $lookup: {
-                from: "users",
-                localField: "_id",
-                foreignField: "_id",
-                as: "userDetails",
-            },
-            },
-            {
-            
-            $project: {
-                userId: "$_id",
-                appointmentCount: 1,
-                userDetails: { $arrayElemAt: ["$userDetails", 0] }, 
-            },
-            },
-        ]);
-    
-        if (!result.length) {
-            return res.status(404).json({ message: "No users found." });
-        }
-    
-        return res.status(200).json({ data: result });
+      if (!result.length) {
+        return res.status(404).json({ message: "No appointments found." });
+      }
+
+      return res.status(200).json({ data: result });
     } catch (err) {
-        console.error("Error:", err);
-        return res.status(500).json({
-            error: "An error occurred.",
-        });
+      console.error("Error:", err);
+      return res.status(500).json({
+        error: "An error occurred.",
+      });
     }
-};
+  };
+
+  getTopUsers = async (req, res) => {
+    try {
+      const result = await Appointment.aggregate([
+        {
+          $match: {
+            is_deleted: { $ne: true },
+          },
+        },
+        {
+          $group: {
+            _id: "$user_id",
+            appointmentCount: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { appointmentCount: -1 },
+        },
+        {
+          $limit: 5,
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          $project: {
+            userId: "$_id",
+            appointmentCount: 1,
+            userDetails: { $arrayElemAt: ["$userDetails", 0] },
+          },
+        },
+      ]);
+
+      if (!result.length) {
+        return res.status(404).json({ message: "No users found." });
+      }
+
+      return res.status(200).json({ data: result });
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({
+        error: "An error occurred.",
+      });
+    }
+  };
 
   doctorProfile = async (req, res) => {
     try {
       const doctorEmail = req.user;
-      
-      const profileData = await Doctor.findOne({ email: doctorEmail }).populate("speciality_id", "name").populate("region_id", "name"); 
-  
+
+      const profileData = await Doctor.findOne({ email: doctorEmail })
+        .populate("speciality_id", "name")
+        .populate("region_id", "name");
+
       if (!profileData) {
         return res
           .status(404)
@@ -1018,110 +1014,111 @@ getTopUsers = async (req, res) => {
     }
   };
 
-    getTopDoctors = async (req, res) => {
-        try {
-            const result = await Appointment.aggregate([
-                {
-                
-                $group: {
-                    _id: "$doctor_id", // Group by doctor_id
-                    appointmentCount: { $sum: 1 }, // Count the appointments
-                },
-                },
-                {
-                $sort: { appointmentCount: -1 },
-                },
-                {
-                
-                $limit: 5,
-                },
-                {
-                
-                $lookup: {
-                    from: "users", 
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "doctorDetails",
-                },
-                },
-                {
-                
-                $project: {
-                    doctorId: "$_id",
-                    appointmentCount: 1,
-                    doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] }, 
-                },
-                },
-            ]);
-        
-            if (!result.length) {
-                return res.status(404).json({ message: "No appointments found." });
-            }
-        
-            return res.status(200).json({ data: result });
-        } catch (err) {
-            console.error("Error:", err);
-            return res.status(500).json({
-                error: "An error occurred.",
-            });
-        }
-    };
-  
-    getTopUsers = async (req, res) => {
-        try {
-            const result = await Appointment.aggregate([
-                {
-                
-                $match: {
-                    is_deleted: { $ne: true }, 
-                },
-                },
-                {
-                
-                $group: {
-                    _id: "$user_id",
-                    appointmentCount: { $sum: 1 },
-                },
-                },
-                {
-                
-                $sort: { appointmentCount: -1 },
-                },
-                {
-                
-                $limit: 5,
-                },
-                {
-                
-                $lookup: {
-                    from: "users",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "userDetails",
-                },
-                },
-                {
-                
-                $project: {
-                    userId: "$_id",
-                    appointmentCount: 1,
-                    userDetails: { $arrayElemAt: ["$userDetails", 0] }, 
-                },
-                },
-            ]);
-        
-            if (!result.length) {
-                return res.status(404).json({ message: "No users found." });
-            }
-        
-            return res.status(200).json({ data: result });
-        } catch (err) {
-            console.error("Error:", err);
-            return res.status(500).json({
-                error: "An error occurred.",
-            });
-        }
-    };
+  userProfile = async (req, res) => {
+    try {
+      const user = req.user;
+
+      res.json({ success: true, user });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };
+
+  getTopDoctors = async (req, res) => {
+    try {
+      const result = await Appointment.aggregate([
+        {
+          $group: {
+            _id: "$doctor_id", // Group by doctor_id
+            appointmentCount: { $sum: 1 }, // Count the appointments
+          },
+        },
+        {
+          $sort: { appointmentCount: -1 },
+        },
+        {
+          $limit: 5,
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "doctorDetails",
+          },
+        },
+        {
+          $project: {
+            doctorId: "$_id",
+            appointmentCount: 1,
+            doctorDetails: { $arrayElemAt: ["$doctorDetails", 0] },
+          },
+        },
+      ]);
+
+      if (!result.length) {
+        return res.status(404).json({ message: "No appointments found." });
+      }
+
+      return res.status(200).json({ data: result });
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({
+        error: "An error occurred.",
+      });
+    }
+  };
+
+  getTopUsers = async (req, res) => {
+    try {
+      const result = await Appointment.aggregate([
+        {
+          $match: {
+            is_deleted: { $ne: true },
+          },
+        },
+        {
+          $group: {
+            _id: "$user_id",
+            appointmentCount: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { appointmentCount: -1 },
+        },
+        {
+          $limit: 5,
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          $project: {
+            userId: "$_id",
+            appointmentCount: 1,
+            userDetails: { $arrayElemAt: ["$userDetails", 0] },
+          },
+        },
+      ]);
+
+      if (!result.length) {
+        return res.status(404).json({ message: "No users found." });
+      }
+
+      return res.status(200).json({ data: result });
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({
+        error: "An error occurred.",
+      });
+    }
+  };
 }
 
 module.exports = new account_Controller();

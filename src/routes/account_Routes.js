@@ -75,6 +75,11 @@ router.get(
   require_Auth.Auth_Doctor,
   account_Controller.doctorProfile
 );
+router.get(
+  "/get-user-profile",
+  require_Auth.Auth_User,
+  account_Controller.userProfile
+);
 router.get("/top-doctor", account_Controller.getTopDoctors);
 router.get("/top-users", account_Controller.getTopUsers);
 
