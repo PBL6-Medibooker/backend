@@ -10,7 +10,7 @@ require("dotenv").config()
             const { authorization } = req.headers
         
             if (!authorization){
-                return res.status(404).json({error: 'Authorization token is required'})
+                return res.status(404).json({error: 'Authorization token is required', logout: true})
             }
         
             const token = authorization.split(' ')[1]
@@ -38,7 +38,7 @@ require("dotenv").config()
             const { authorization } = req.headers
         
             if (!authorization){
-                return res.status(404).json({error: 'Authorization token is required'})
+                return res.status(401).json({ error: 'Authorization token is required', logout: true });
             }
         
             const token = authorization.split(' ')[1]
