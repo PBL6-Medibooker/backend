@@ -21,7 +21,7 @@ router.get(
     admin_access_Controller.admin_List
 )
 router.get(
-    '/detail-admin',
+    '/detail-admin/:id',
     admin_access_Controller.admin_Detail
 )
 
