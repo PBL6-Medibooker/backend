@@ -19,13 +19,13 @@ require("dotenv").config()
                 const {_id} = jwt.verify(token, process.env.JWTSecret)
         
                 //find user by _id
-                const info = await User.findOne({_id}).select('email role')
-                if(info.role == 'admin'){ // check if admin
-                    req.user = info.email // attach email to request through req.user
-                    next()
-                }else{
-                    res.status(401).json({error : null})
-                }
+                const info = await User.findOne({_id}).select('email')
+                // if(info.role == 'admin'){ // check if admin
+                //     req.user = info.email // attach email to request through req.user
+                //     next()
+                // }else{
+                //     res.status(401).json({error : null})
+                // }
         
             }catch (error){
                 console.log(error)

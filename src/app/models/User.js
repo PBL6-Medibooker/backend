@@ -21,11 +21,6 @@ const User = new Schema({
     phone: {
         type: String
     },
-    role: {
-        type: String,
-        required: true,
-        default: 'user'
-    },
     profile_image: { 
         type: String,
         default: null
@@ -45,7 +40,7 @@ const User = new Schema({
     is_deleted: {
         type: Boolean,
         default: false
-    }
+    },
 }, { timestamps: true })
 
 // sign up
