@@ -42,7 +42,7 @@ router.post(
     appointment_Controller.get_Appointments_By_Doctor
 )
 
-router.get(
+router.post(
     '/get-appointment-by-month',
     appointment_Controller.getAppointmentCountByMonth
 )

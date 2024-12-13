@@ -400,72 +400,144 @@ class appointment_Controller {
         }
     }
 
+    // getAppointmentCountByMonth = async (req, res) => {
+    //     try {
+    //         const result = await Appointment.aggregate([
+    //             {
+    //             $addFields: {
+    //                 formattedDate: {
+    //                     $trim: {
+    //                         input: {
+    //                             $arrayElemAt: [
+    //                                 { $split: ["$appointment_day", " "] }, // Split on the first space
+    //                                 1,
+    //                             ],
+    //                         },
+    //                     },
+    //                 },
+    //             },
+    //             },
+    //             {
+    //             // Convert the modified string (now in YYYY-MM-DD format) to a Date object
+    //             $addFields: {
+    //                 date: {
+    //                     $dateFromString: {
+    //                         dateString: "$formattedDate",
+    //                         format: "%Y-%m-%d",
+    //                     },
+    //                 },
+    //             },
+    //             },
+    //             {
+    //             $addFields: {
+    //                 yearMonth: { $dateToString: { format: "%Y-%m", date: "$date" } },
+    //             },
+    //             },
+    //             {
+    //             // Group by year and month
+    //             $group: {
+    //                 _id: "$yearMonth",
+    //                 appointmentCount: { $sum: 1 },
+    //             },
+    //             },
+    //             {
+    //             // Sort by year and month (ascending)
+    //             $sort: { _id: 1 },
+    //             },
+    //             {
+    //             // Project the result to include only the formatted date and count
+    //             $project: {
+    //                 _id: 0,
+    //                 month: "$_id",
+    //                 appointmentCount: 1,
+    //             },
+    //             },
+    //         ])
+
+    //         if (!result.length) {
+    //             return res.status(404).json({ message: "No appointments found." })
+    //         }
+
+    //         return res.status(200).json({ data: result })
+    //     } catch (err) {
+    //         console.error("Error:", err)
+    //         return res.status(500).json({
+    //             error: "An error occurred.",
+    //         })
+    //     }
+    // }
+
     getAppointmentCountByMonth = async (req, res) => {
         try {
+            const { year } = req.body;
+            const selectedYear = year || new Date().getFullYear();
+    
             const result = await Appointment.aggregate([
                 {
-                $addFields: {
-                    formattedDate: {
-                        $trim: {
-                            input: {
-                                $arrayElemAt: [
-                                    { $split: ["$appointment_day", " "] }, // Split on the first space
-                                    1,
-                                ],
+                    $addFields: {
+                        formattedDate: {
+                            $trim: {
+                                input: {
+                                    $arrayElemAt: [
+                                        { $split: ["$appointment_day", " "] },
+                                        1,
+                                    ],
+                                },
                             },
                         },
                     },
                 },
-                },
                 {
-                // Convert the modified string (now in YYYY-MM-DD format) to a Date object
-                $addFields: {
-                    date: {
-                        $dateFromString: {
-                            dateString: "$formattedDate",
-                            format: "%Y-%m-%d",
+                    $addFields: {
+                        date: {
+                            $dateFromString: {
+                                dateString: "$formattedDate",
+                                format: "%Y-%m-%d",
+                            },
                         },
                     },
                 },
+                {
+                    $addFields: {
+                        year: { $year: "$date" },
+                        yearMonth: { $dateToString: { format: "%Y-%m", date: "$date" } },
+                    },
                 },
                 {
-                $addFields: {
-                    yearMonth: { $dateToString: { format: "%Y-%m", date: "$date" } },
-                },
-                },
-                {
-                // Group by year and month
-                $group: {
-                    _id: "$yearMonth",
-                    appointmentCount: { $sum: 1 },
-                },
+                    // Filter appointments by the specified year
+                    $match: { year: parseInt(selectedYear, 10) },
                 },
                 {
-                // Sort by year and month (ascending)
-                $sort: { _id: 1 },
+                    $group: {
+                        _id: "$yearMonth",
+                        appointmentCount: { $sum: 1 },
+                    },
                 },
                 {
-                // Project the result to include only the formatted date and count
-                $project: {
-                    _id: 0,
-                    month: "$_id",
-                    appointmentCount: 1,
+                    $sort: { _id: 1 },
                 },
+                {
+                    $project: {
+                        _id: 0,
+                        month: "$_id",
+                        appointmentCount: 1,
+                    },
                 },
-            ])
-
+            ]);
+    
             if (!result.length) {
-                return res.status(404).json({ message: "No appointments found." })
+                return res.status(404).json({ message: "No appointments found for the selected year." });
             }
-
-            return res.status(200).json({ data: result })
+    
+            return res.status(200).json({ data: result });
         } catch (err) {
-            console.error("Error:", err)
+            console.error("Error:", err);
             return res.status(500).json({
                 error: "An error occurred.",
-            })
+            });
         }
-    }
+    };
+    
 
     getAllUserAppointments = async (req, res) => {
         try {
