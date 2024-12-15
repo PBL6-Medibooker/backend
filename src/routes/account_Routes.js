@@ -52,11 +52,6 @@ router.post(
     '/change-pass', 
     account_Controller.change_password
 )
-
-router.post(
-    '/change-acc-role', 
-    account_Controller.change_Account_Role
-)
 router.post(
     '/forgot-pass', 
     account_Controller.forgot_password
