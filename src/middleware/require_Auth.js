@@ -25,7 +25,7 @@ require("dotenv").config()
                 if (!info) {
                     return res.status(401).json({ error: 'Not authorized. Admin access required.' })
                 }
-
+                
                 req.user = {
                     email: info.user_id.email,
                     read_access: info.read_access,

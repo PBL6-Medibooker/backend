@@ -433,37 +433,6 @@ class account_Controller{
             res.status(400).json({error: error.message})
         }
     }
-
-    change_Account_Role = async(req, res) =>{
-        try{
-            const {email, role, limit} = req.body
-
-            let query = {role}
-
-            if (limit == 'r'){ // allow reading
-                query.allow_read = true 
-                query.allow_write = false 
-            } else if (limit == 'w'){ // allow editing
-                query.allow_read = false 
-                query.allow_write = true 
-            } else if (limit == 'a'){ // allow all
-                query.allow_read = true
-                query.allow_write = true
-            }
-
-            const account = await User.findOneAndUpdate(
-                {email}, 
-                query,
-                {new: true}
-            ).populate('speciality_id', 'name')
-            .populate('region_id', 'name')
-
-            res.status(200).json(account)
-        }catch(error){
-            console.log(error.message)
-            res.status(400).json({error: error.message})
-        }
-    }
     
     getProfileAdmin = async (req, res) => {
         try {
