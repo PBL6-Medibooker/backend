@@ -3,29 +3,9 @@ const Doctor = require('../models/Doctor')
 const cloudinary = require('../utils/cloudinary')
 
 const fs = require('fs')
-// const path = require('path')
-// const mime = require('mime-types')
-// const sharp = require('sharp')
-// const multer = require('multer')
-// const { promisify } = require('util')
 const mongoose = require('mongoose')
 
 require('dotenv').config()
-
-// const storage = multer.memoryStorage()
-
-// const upload = multer({
-//   storage: storage,
-//   fileFilter: (res, file, cb) => {
-//     if (file.mimetype === 'image/jpeg') {
-//       cb(null, true)
-//     } else {
-//       cb(new Error('Only JPG image files are allowed'))
-//     }
-//   },
-// }).single('speciality_image')
-
-// const uploadPromise = promisify(upload)
 
 class speciality_Controller {
 
@@ -106,18 +86,6 @@ class speciality_Controller {
             } else {
                 specialities = await Speciality.find({is_deleted: false})
             }
-
-            // const specialities_With_Png_Images = specialities.map((speciality) => {
-            //     const specialityObject = speciality.toObject()
-
-            //     if (specialityObject.speciality_image && Buffer.isBuffer(specialityObject.speciality_image)) {
-            //         // Convert buffer directly to base64 string
-            //         specialityObject.speciality_image = `data:image/png;base64,${specialityObject.speciality_image.toString('base64')}`
-            //     }
-
-
-            //     return specialityObject
-            // })
 
             res.status(200).json(specialities)
         } catch (error) {
