@@ -32,17 +32,16 @@ class account_Controller{
                 return res.status(403).json({
                     error:
                         "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
-                });
+                })
             }
 
             const token = this.create_Token(acc._id)
-            const role = acc.role
             
             if(acc instanceof Doctor){
                 const verified = acc.verified
-                res.status(200).json({email, token, role, verified})
+                res.status(200).json({email, token, verified})
             }else{
-                res.status(200).json({email, token, role})
+                res.status(200).json({email, token})
             }
         }catch(error){
             console.log(error.message)
@@ -55,7 +54,6 @@ class account_Controller{
             // get info from body
             const { email, password, username, phone, is_doc } = req.body
             //   const proof = req.file ? req.file.buffer : null
-            const role = "user"
             let acc
         
             // add account
@@ -86,9 +84,13 @@ class account_Controller{
             // console.log(acc)
         
             // create token and respone
-            const token = this.create_Token(acc._id)
+            const token = this.create_Token(acc._id, '1d') // Token expire in 1 day
 
-            res.status(201).json({ email, token, role })
+            const confirm_Url = `${req.protocol}://${req.get('host')}/acc/confirm-acc/${token}`
+
+            await this.send_Confirmation_Email(email, username, confirm_Url)
+
+            res.status(201).json({ email, token})
         } catch (error) {
             console.log(error.message)
             res.status(400).json({ error: error.message })
@@ -358,15 +360,18 @@ class account_Controller{
             })
     
             const reset_URL = `${req.protocol}://${req.get('host')}/acc/reset-password/${reset_Token}`
+
+            // Render email content
+            const html_Content = await ejs.renderFile(path.join(__dirname, '../views', 'password-reset.ejs'), {
+                username: account.username, // Pass the username 
+                reset_URL // Pass the reset URL
+            })
+
             const mail_Options = {
                 from: process.env.EMAIL,
                 to: email,
                 subject: 'Đặt lại mật khẩu',
-                html: `
-                        <p>Xin hãy nhấn vào đường dẫn bên dưới để cài đặt lại mật khẩu:</p>
-                        <a href="${reset_URL}">Đặt lại mật khẩu</a>
-                        <p>Đường dẫn sẽ mất hiệu lực sau 10 phút</p>
-                    `
+                html: html_Content
             }
     
             await transporter.sendMail(mail_Options)
@@ -381,6 +386,10 @@ class account_Controller{
     reset_password = async(req, res) =>{
         try {
             const token = req.params.token
+
+            if (!token) {
+                throw new Error('Token is required')
+            }
     
             // Verify the token
             const decoded = jwt.verify(token, process.env.JWTSecret)
@@ -388,7 +397,7 @@ class account_Controller{
             
             
             if (!user) {
-                throw new Error('Invalid or expired token')
+                throw new Error('No user found')
             }
 
             // Generate new password
@@ -503,6 +512,67 @@ class account_Controller{
             return res.status(500).json({
                 error: "An error occurred.",
             });
+        }
+    }
+
+    send_Confirmation_Email = async(email, username, confirm_Url) => {
+        // Configure email transporter
+        const transporter = nodemailer.createTransport({
+            service: process.env.EMAIL_HOST,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        })
+    
+        const email_Template_Path = path.join(__dirname, '../views', 'account-confirmation.ejs')
+        
+        // Render email content
+        const html_Content = await ejs.renderFile(email_Template_Path, { username, confirm_Url })
+        
+        const mail_Options = {
+            from: process.env.EMAIL,
+            to: email,
+            subject: 'Xác nhận tài khoản',
+            html: html_Content
+        }
+    
+        await transporter.sendMail(mail_Options)
+    }
+
+    confirm_Account = async (req, res) => {
+        try {
+            const token = req.params.token
+
+            if (!token) {
+                throw new Error('Token is required')
+            }
+            
+            // Verify the token
+            const decoded = jwt.verify(token, process.env.JWTSecret)
+            
+            // Update user's status
+            const user = await User.findByIdAndUpdate(decoded._id, { is_deleted: false }, { new: true })
+    
+            if (!user) {
+                throw new Error('No user found')
+            }
+
+            return res.status(200).send('<h1>Đã xác nhận tài khoản thành công (cái này để tạm, sau sẽ thay bằng đường dẫn)</h1>')
+
+        } catch (error) {
+            const error_Message =
+            error.name === 'TokenExpiredError'
+                ? 'Đường dẫn xác nhận đã hết hạn. Xin hãy thử lại đường dẫn mới sau.'
+                : 'Đã xảy ra sự cố. Xin thử lại sau.'
+
+            // Render the error page with the error message
+            const html_Error_Content = await ejs.renderFile(path.join(__dirname, '../views', 'landing-error.ejs'), {
+                error_Message, // Pass the error message to the template
+            })
+
+            // Send the error page as the response
+            return res.status(400).send(html_Error_Content)
         }
     }
 }

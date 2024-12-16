@@ -39,7 +39,7 @@ const User = new Schema({
     },
     is_deleted: {
         type: Boolean,
-        default: false
+        default: true
     },
 }, { timestamps: true })
 
