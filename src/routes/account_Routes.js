@@ -35,6 +35,11 @@ router.get(
   account_Controller.getProfileAdmin
 );
 router.get("/top-users", account_Controller.getTopUsers);
-router.post("/confirm-acc/:token", account_Controller.confirm_Account);
+router.get("/confirm-acc/:token", account_Controller.confirm_Account);
+router.get(
+  "/get-user-profile",
+  require_Auth.Auth_User,
+  account_Controller.userProfile
+);
 
 module.exports = router;

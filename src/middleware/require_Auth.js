@@ -84,8 +84,10 @@ class requireAuth {
       const { _id } = jwt.verify(token, process.env.JWTSecret);
 
       //find user by _id
-      const info = await User.findOne({ _id }).select("email");
-      req.user = info.email;
+      const info = await User.findOne({ _id })
+        .populate("speciality_id", "name")
+        .populate("region_id", "name");
+      req.user = info;
       next();
     } catch (error) {
       console.log(error);
