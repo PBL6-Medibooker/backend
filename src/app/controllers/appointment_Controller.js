@@ -319,7 +319,7 @@ class appointment_Controller {
                 query.is_deleted = is_deleted
             }
 
-            const appointment = await Appointment.findOne(query)
+            const appointment = await Appointment.find(query)
                 .populate('user_id', 'username date_of_birth profile_image')
                 .populate('doctor_id', 'username')
 
