@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken")
 const User = require('../app/models/User')
 const Doctor = require('../app/models/Doctor')
+const Admin_Access = require('../app/models/Admin_Access')
 require("dotenv").config()
 
     class requireAuth{
@@ -14,18 +15,23 @@ require("dotenv").config()
             }
         
             const token = authorization.split(' ')[1]
+            
         
             try{
                 const {_id} = jwt.verify(token, process.env.JWTSecret)
+                
         
                 //find user by _id
-                const info = await User.findOne({_id}).select('email role')
-                if(info.role == 'admin'){ // check if admin
-                    req.user = info.email // attach email to request through req.user
-                    next()
-                }else{
-                    res.status(401).json({error : null})
-                }
+                // const info = await User.findOne({_id}).select('email')
+                // if(info.role == 'admin'){ // check if admin
+                //     req.user = info.email // attach email to request through req.user
+                //     next()
+                // }else{
+                //     res.status(401).json({error : null})
+                // }
+                const info = await Admin_Access.findOne({user_id: _id}).populate('user_id')
+                req.user = info.user_id
+                next()
         
             }catch (error){
                 console.log(error)

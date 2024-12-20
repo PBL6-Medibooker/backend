@@ -5,6 +5,8 @@ const User = require('../models/User')
 const ical = require('ical-generator').default
 const nodemailer = require('nodemailer')
 const mongoose = require('mongoose')
+const path = require('path')
+const ejs = require('ejs')
 
 class appointment_Controller {
 
@@ -22,23 +24,39 @@ class appointment_Controller {
                 }
             })
 
+            // Remove the day of the week
+            const date = appointment_day.split(' ').slice(1).join(' ')
+
+            // Reformat the date to a recognized format (YYYY-MM-DD)
+            const [day, month, year] = date.split('/')
+            const reformatted_Date = `${year}-${month}-${day}`
+
             // Create date object
-            const utc_Time_Start = new Date(`${appointment_day} ${appointment_time_start}`)
+            const utc_Time_Start = new Date(`${reformatted_Date} ${appointment_time_start}`)
 
             // UTC off-set
             const timeZoneOffset = 7 * 60 * 60 * 1000 // UTC+7 offset in milliseconds
             const local_Time = new Date(utc_Time_Start.getTime() + timeZoneOffset)
+
+            const appointment_Date = `${local_Time.getDate()} - ${local_Time.getMonth() + 1} - ${local_Time.getFullYear()}`
+
+            // Render the ejs content
+            const email_Content = await ejs.renderFile(
+                path.join(__dirname, '../views', 'appointment-notice.ejs'),
+                {
+                    doctor,
+                    appointment_Date,
+                    appointment_time_start: appointment_time_start,
+                    appointment_time_end: appointment_time_end,
+                }
+            )
             
             // Send the email
             let mail_Options = {
                 from: process.env.EMAIL,
                 to: email,
                 subject: 'Nhắc lịch hẹn khám',
-                text: 'Cảm ơn bạn đã đặt lịch khám qua MediBooker. Dưới đây là thông tin lịch khám của bạn'
-                    +`\nBác sĩ: ${doctor}` 
-                    +`\nNgày hẹn khám: ${local_Time.getDate()} - ${local_Time.getMonth()} - ${local_Time.getFullYear()} `
-                    +`\nKhung giờ khám: ${appointment_time_start} - ${appointment_time_end}`
-                    +`\nXin hãy nhớ đến đúng giờ khám\n\nTrân trọng!`
+                html: email_Content
             }
             
             await transporter.sendMail(mail_Options)
@@ -400,72 +418,7 @@ class appointment_Controller {
         }
     }
 
-    // getAppointmentCountByMonth = async (req, res) => {
-    //     try {
-    //         const result = await Appointment.aggregate([
-    //             {
-    //             $addFields: {
-    //                 formattedDate: {
-    //                     $trim: {
-    //                         input: {
-    //                             $arrayElemAt: [
-    //                                 { $split: ["$appointment_day", " "] }, // Split on the first space
-    //                                 1,
-    //                             ],
-    //                         },
-    //                     },
-    //                 },
-    //             },
-    //             },
-    //             {
-    //             // Convert the modified string (now in YYYY-MM-DD format) to a Date object
-    //             $addFields: {
-    //                 date: {
-    //                     $dateFromString: {
-    //                         dateString: "$formattedDate",
-    //                         format: "%Y-%m-%d",
-    //                     },
-    //                 },
-    //             },
-    //             },
-    //             {
-    //             $addFields: {
-    //                 yearMonth: { $dateToString: { format: "%Y-%m", date: "$date" } },
-    //             },
-    //             },
-    //             {
-    //             // Group by year and month
-    //             $group: {
-    //                 _id: "$yearMonth",
-    //                 appointmentCount: { $sum: 1 },
-    //             },
-    //             },
-    //             {
-    //             // Sort by year and month (ascending)
-    //             $sort: { _id: 1 },
-    //             },
-    //             {
-    //             // Project the result to include only the formatted date and count
-    //             $project: {
-    //                 _id: 0,
-    //                 month: "$_id",
-    //                 appointmentCount: 1,
-    //             },
-    //             },
-    //         ])
 
-    //         if (!result.length) {
-    //             return res.status(404).json({ message: "No appointments found." })
-    //         }
-
-    //         return res.status(200).json({ data: result })
-    //     } catch (err) {
-    //         console.error("Error:", err)
-    //         return res.status(500).json({
-    //             error: "An error occurred.",
-    //         })
-    //     }
-    // }
 
     getAppointmentCountByMonth = async (req, res) => {
         try {

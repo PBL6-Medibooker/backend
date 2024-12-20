@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 require('dotenv').config()
 
 // async function connect() {
@@ -26,7 +26,5 @@ async function connect() {
         console.log('Database connection failed: ', error)
     }
 }
-
-
 
 module.exports = { connect }

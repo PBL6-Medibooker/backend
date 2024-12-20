@@ -1,6 +1,8 @@
 const Region = require('../models/Region')
 const mongoose = require('mongoose')
 const Doctor = require('./../models/Doctor')
+const Appointment = require('./../models/Appointment')
+
 
 
 class region_Controller {
@@ -194,71 +196,91 @@ class region_Controller {
     }
 
 
-     countDoctorsByRegion = async (req, res) => {
+    countDoctorsByRegion = async (req, res) => {
         try {
-          const result = await Doctor.aggregate([
-            {
-                $match: {
-                  region_id: { $ne: null },
-                  is_deleted: { $ne: true },
-                  verified: { $ne: false },
+            const result = await Doctor.aggregate([
+                // Step 1: Filter doctors by valid region_id
+                {
+                    $match: {
+                        region_id: { $ne: null },
+                        is_deleted: { $ne: true },
+                        verified: { $ne: false },
+                    },
                 },
-              },
-              {
-                $addFields: {
-                  region_id: { $toObjectId: "$region_id" }, 
+                {
+                    $addFields: {
+                        region_id: { $toObjectId: "$region_id" }, // Ensure region_id is an ObjectId
+                    },
                 },
-              },
-            {
-              $group: {
-                _id: "$region_id", 
-                doctorCount: { $sum: 1 }, 
-              },
-            },
-            {
-              $lookup: {
-                from: "regions", 
-                localField: "_id", 
-                foreignField: "_id",
-                as: "regionDetails",
-              },
-            },
-            {
-                $match: {
-                  "regionDetails.is_deleted": { $ne: true }, 
+                // Step 2: Group doctors by region_id
+                {
+                    $group: {
+                        _id: "$region_id",
+                        doctorCount: { $sum: 1 },
+                    },
                 },
-              },
-              {
-                $sort: {
-                  doctorCount: -1, 
+                // Step 3: Lookup region details
+                {
+                    $lookup: {
+                        from: "regions",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "regionDetails",
+                    },
                 },
-              },
-             
-              {
-                $limit: 5,
-              },
-        
-            {
-              $project: {
-                regionId: "$_id", 
-                doctorCount: 1, 
-                regionDetails: { $arrayElemAt: ["$regionDetails", 0] }, 
-              },
-            },
-          ]);
-      
-          if (!result.length) {
-            return res.status(404).json({ message: "No doctors found in any region." });
-          }
-      
-          return res.status(200).json({ data: result });
+                {
+                    $match: {
+                        "regionDetails.is_deleted": { $ne: true },
+                    },
+                },
+                // Step 4: Lookup doctors in the region and their appointments
+                {
+                    $lookup: {
+                        from: "doctors",
+                        localField: "_id",
+                        foreignField: "region_id",
+                        as: "doctors",
+                    },
+                },
+               
+                // Step 6: Sort and limit
+                {
+                    $sort: {
+                        doctorCount: -1, // Sort by doctor count
+                    },
+                },
+                {
+                    $limit: 5,
+                },
+                // Step 7: Final projection
+                {
+                    $project: {
+                        regionId: "$_id",
+                        doctorCount: 1,
+                    
+                        regionDetails: { $arrayElemAt: ["$regionDetails", 0] },
+                    },
+                },
+            ]);
+    
+            if (!result.length) {
+                return res.status(404).json({ message: "No data found for any region." });
+            }
+    
+            return res.status(200).json({ data: result });
         } catch (error) {
-          console.error("Error:", error);
-          return res.status(500).json({
-            error: "An error occurred while counting doctors by region.",
-          });
+            console.error("Error:", error);
+            return res.status(500).json({
+                error: "An error occurred while counting doctors and appointments by region.",
+            });
         }
-      };
+    };
+    
+   
+    
+    
+    
+
       
 }
 
