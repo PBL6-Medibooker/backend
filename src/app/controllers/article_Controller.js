@@ -3,27 +3,8 @@ const Doctor = require('../models/Doctor')
 const Speciality = require('../models/Speciality')
 const cloudinary = require('../utils/cloudinary')
 
-// const multer = require('multer')
-// const { promisify } = require('util')
 const fs = require("fs")
-// const path = require("path")
-// const mime = require("mime-types")
 require('dotenv').config()
-
-// const storage = multer.memoryStorage()
-
-// const upload = multer({
-//     storage: storage,
-//     fileFilter: (res, file, cb) => {
-//         if (file.mimetype === 'image/jpeg') {
-//             cb(null, true)
-//         } else {
-//             cb(new Error('Only JPG image files are allowed'))
-//         }
-//     },
-// }).single('article_image')
-
-// const uploadPromise = promisify(upload)
 
 class article_Controller {
     add_Article = async (req, res) => {
@@ -172,7 +153,6 @@ class article_Controller {
         }
     }
 
-
     update_Article = async(req, res) =>{
         try{
             // await uploadPromise(req, res)
@@ -200,7 +180,7 @@ class article_Controller {
             }
 
             if (!article) {
-                throw new Error('Article not found')
+                return res.status(404).json({error: 'Account not found'})
             }
 
             if (article_title) {

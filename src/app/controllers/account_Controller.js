@@ -379,7 +379,7 @@ class account_Controller{
             res.status(200).json({message: 'Password reset link sent to your email'})
         } catch (error) {
             console.log(error.message);
-            res.status(500).json({ error: error.message })
+            res.status(400).json({ error: error.message })
         }
     }
     

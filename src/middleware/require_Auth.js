@@ -37,7 +37,7 @@ require("dotenv").config()
         
             }catch (error){
                 console.log(error)
-                return res.status(401).json({error: "Request not authorized"})
+                return res.status(401).json({error: 'Request not authorized'})
             }
         }
         
@@ -46,7 +46,7 @@ require("dotenv").config()
             const { authorization } = req.headers
         
             if (!authorization){
-                return res.status(401).json({ error: 'Authorization token is required', logout: true });
+                return res.status(401).json({ error: 'Authorization token is required', logout: true })
             }
         
             const token = authorization.split(' ')[1]
@@ -56,12 +56,17 @@ require("dotenv").config()
         
                 //find doctor by _id
                 const info = await Doctor.findOne({_id}).select('email')
+
+                if (!info) {
+                    return res.status(401).json({ error: 'Not authorized' })
+                }
+
                 req.user = info.email
                 next()
         
             }catch (error){
                 console.log(error)
-                return res.status(401).json({error: "Request not authorized"})
+                return res.status(401).json({error: 'Request not authorized'})
             }
         }
     
@@ -70,7 +75,7 @@ require("dotenv").config()
             const { authorization } = req.headers
         
             if (!authorization){
-                return res.status(401).json({error: 'Authorization token is required'})
+                return res.status(401).json({ error: 'Authorization token is required', logout: true })
             }
         
             const token = authorization.split(' ')[1]
@@ -80,12 +85,17 @@ require("dotenv").config()
         
                 //find user by _id
                 const info = await User.findOne({_id}).select('email')
+
+                if (!info) {
+                    return res.status(401).json({ error: 'Not authorized.' })
+                }
+
                 req.user = info.email
                 next()
         
             }catch (error){
                 console.log(error)
-                return res.status(401).json({error: "Request not authorized"})
+                return res.status(401).json({error: 'Request not authorized'})
             }
         }
     }    
