@@ -419,7 +419,6 @@ class appointment_Controller {
     }
 
 
-
     getAppointmentCountByMonth = async (req, res) => {
         try {
             const { year } = req.body;
@@ -500,8 +499,15 @@ class appointment_Controller {
     
             const appointments = await Appointment.find(query)
                 .populate('user_id', 'username date_of_birth profile_image')
-                .populate('doctor_id', 'username profile_image speciality_id address')
-                .populate('doctor_id.speciality_id', '_id name');
+                .populate({
+                    path: 'doctor_id',
+                    select: 'email username profile_image address',
+                    populate: {
+                        path: 'speciality_id',
+                        select: 'name _id', 
+                    },
+                })
+                // .populate('doctor_id.speciality_id', '_id name');
     
             res.status(200).json(appointments);
         } catch (error) {

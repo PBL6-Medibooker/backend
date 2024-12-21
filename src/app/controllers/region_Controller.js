@@ -233,7 +233,7 @@ class region_Controller {
                         "regionDetails.is_deleted": { $ne: true },
                     },
                 },
-                // Step 4: Lookup doctors in the region and their appointments
+                // Step 4: Lookup doctors in the region 
                 {
                     $lookup: {
                         from: "doctors",
@@ -252,12 +252,11 @@ class region_Controller {
                 {
                     $limit: 5,
                 },
-                // Step 7: Final projection
+                
                 {
                     $project: {
                         regionId: "$_id",
-                        doctorCount: 1,
-                    
+                        doctorCount: 1,           
                         regionDetails: { $arrayElemAt: ["$regionDetails", 0] },
                     },
                 },
@@ -275,12 +274,45 @@ class region_Controller {
             });
         }
     };
-    
-   
-    
-    
-    
 
+
+     countAppointmentsByDoctorWithDetails = async () => {
+        try {
+            const result = await Appointment.aggregate([
+                // Step 1: Group by doctor_id and count appointments
+                {
+                    $group: {
+                        _id: "$doctor_id",
+                        appointmentCount: { $sum: 1 },
+                    },
+                },
+                // Step 2: Lookup doctor details
+                {
+                    $lookup: {
+                        from: "doctors", // Ensure this matches the actual collection name
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "doctorInfo",
+                    },
+                },
+                // Step 3: Extract the first doctorInfo object
+                {
+                    $project: {
+                        doctor_id: "$_id",
+                        appointmentCount: 1,
+                        doctorInfo: { $arrayElemAt: ["$doctorInfo", 1] }, // Extract the first matching doctorInfo
+                    },
+                },
+            ]);
+    
+            console.log("Appointments by Doctor with Details:", result);
+            return result;
+        } catch (error) {
+            console.error("Error counting appointments by doctor with details:", error);
+        }
+    };
+    
+    
       
 }
 
