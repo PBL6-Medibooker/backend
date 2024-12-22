@@ -3,7 +3,7 @@ require('dotenv').config()
 
 async function connect() {
     try{
-        await mongoose.connect(process.env.AtlasURI,{
+        await mongoose.connect(process.env.MongoURI,{
             family: 4,
         })
         console.log('Database connection successful')
