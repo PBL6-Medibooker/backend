@@ -56,7 +56,7 @@ router.post(
     '/forgot-pass', 
     account_Controller.forgot_password
 )
-router.post(
+router.get(
     '/reset-password/:token', 
     account_Controller.reset_password
 )
@@ -69,7 +69,7 @@ router.get(
     "/top-users",
     account_Controller.getTopUsers
 )
-router.post(
+router.get(
     '/confirm-acc/:token',
     account_Controller.confirm_Account
 )
