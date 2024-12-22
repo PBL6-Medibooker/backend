@@ -605,7 +605,33 @@ class doctor_Controller{
         }
     };
     
-        
+    get_Filtered_Doctor_List_Main_Info_Only = async(req, res) =>{
+        try{
+            const {speciality, region} = req.body
+
+            let query = {}
+
+            if(speciality){
+                const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
+                query.speciality_id = speciality_id._id
+            }
+
+            if(region){
+                const region_id = await Region.findOne({name: region}, {_id: 1})
+                query.region_id = region_id._id
+            }
+
+            const doctors = await Doctor.find(query)
+            .select('_id username profile_image bio email')
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
+
+            res.status(200).json(doctors)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }  
     
 }
 
