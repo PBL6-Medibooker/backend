@@ -39,8 +39,8 @@ const User = new Schema({
     },
     is_deleted: {
         type: Boolean,
-        default: true
-    },
+        default: false
+    }
 }, { timestamps: true })
 
 // sign up

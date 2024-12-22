@@ -1,5 +1,7 @@
 const User = require('../models/User')
 const Doctor = require('../models/Doctor')
+const Admin_Access = require('../models/Admin_Access')
+
 const Appointment = require('../models/Appointment')
 const cloudinary = require('../utils/cloudinary')
 
@@ -18,36 +20,51 @@ class account_Controller{
         return jwt.sign({_id}, process.env.JWTSecret, {expiresIn})
     }
     
-    acc_Login = async(req, res) => {
-        // get info from body
-        const {email, password} = req.body
+    acc_Login = async (req, res) => {
+        // Get info from body
+        const { email, password } = req.body
         console.log(req.headers['content-type'])
-        // get account
-        try{
-            let acc
-            acc = await User.login(email, password)
-
+    
+        try {
+            const acc = await User.login(email, password)
+    
             if (acc.is_deleted) {
-                // console.log("Login failed. Account has been soft-deleted: ", email);
                 return res.status(403).json({
+
                     error:
                         "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
                 })
             }
-
+    
             const token = this.create_Token(acc._id)
-            
-            if(acc instanceof Doctor){
-                const verified = acc.verified
-                res.status(200).json({email, token, verified})
-            }else{
-                res.status(200).json({email, token})
+
+    
+            const adminAccess = await Admin_Access.findOne({ user_id: acc._id })
+            if (adminAccess instanceof Admin_Access) {
+                return res.status(200).json({ email, token, adminAccess })
             }
-        }catch(error){
-            console.log(error.message)
-            res.status(400).json({error: error.message})
+
+            
+            // if(acc instanceof Doctor){
+            //     const verified = acc.verified
+            //     res.status(200).json({email, token, verified})
+            // }else{
+            //     res.status(200).json({email, token})
+
+            // }
+    
+            if (acc instanceof Doctor) {
+                const verified = acc.verified
+                return res.status(200).json({ email, token, verified })
+            }
+    
+            return res.status(200).json({ email, token })
+        } catch (error) {
+            console.log(error.message);
+            return res.status(400).json({ error: error.message });
         }
     }
+    
 
     acc_Signup = async (req, res) => {
         try {
@@ -443,21 +460,24 @@ class account_Controller{
         }
     }
     
+  
     getProfileAdmin = async (req, res) => {
         try {
-            const adminEmail = req.user 
-            const adminData = await User.findOne({ email: adminEmail })
-
+            const {email} = req.user; 
+    
+            const adminData = await User.findOne({email});
+    
             if (!adminData) {
-                return res.status(404).json({ error: "Admin profile not found" })
+                return res.status(404).json({ error: "Admin profile not found" });
             }
-
-            res.json({ success: true, adminData })
+    
+            res.json({ success: true, adminData });
         } catch (error) {
-            console.log(error.message)
-            res.status(400).json({ error: error.message })
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
+    
   
     getTopUsers = async (req, res) => {
         try {

@@ -15,10 +15,16 @@ require("dotenv").config()
             }
         
             const token = authorization.split(' ')[1]
+            
         
             try{
                 const {_id} = jwt.verify(token, process.env.JWTSecret)
-        
+             
+             
+                // const info = await Admin_Access.findOne({user_id: _id}).populate('user_id')
+                // req.user = info.user_id
+
+
                 //find user by _id in admin_access
                 const info = await Admin_Access.findOne({user_id: _id}).populate('user_id', 'email')
 

@@ -331,9 +331,9 @@ class speciality_Controller {
                 {
                 $sort: { doctorCount: -1 },
                 },
-                {
-                $limit: 5,
-                },
+                // {
+                // $limit: 5,
+                // },
             ]);
 
             if (!result.length) {

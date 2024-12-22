@@ -450,8 +450,71 @@ class post_Controller{
             });
         }
     };
+
+    countPostsByMonth = async (req, res) => {
+        try {
+            const { selectedYear } = req.body; // Get the selectedYear from the request body
+            
+            if (!selectedYear) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Selected year is required.',
+                });
+            }
+    
+            const result = await Post.aggregate([
+                {
+                    // Add a field 'monthYear' to group by month and year
+                    $project: {
+                        monthYear: {
+                            $dateToString: { format: "%Y-%m", date: "$createdAt" }, // Get year-month format (e.g., 2024-10)
+                        },
+                    },
+                },
+                {
+                    // Group by the monthYear field to count the posts in each month
+                    $group: {
+                        _id: "$monthYear", // Group by the formatted month-year
+                        totalPosts: { $sum: 1 }, // Count the number of posts
+                    },
+                },
+                {
+                    // Sort the results in descending order (most recent posts first)
+                    $sort: { _id: -1 },
+                },
+            ]);
+    
+            const stats = [];
+            // Loop through all months of the selected year
+            for (let i = 1; i <= 12; i++) {
+                const monthString = `${selectedYear}-${i.toString().padStart(2, '0')}`; // Format "YYYY-MM"
+                
+                // Find the post count for the specific month in the result
+                const postData = result.find(item => item._id === monthString);
+    
+                stats.push({
+                    month: i,
+                    postCount: postData ? postData.totalPosts : 0, // Add 0 if no posts for that month
+                });
+            }
+    
+            return res.status(200).json({
+                success: true,
+                data: stats,
+                message: 'Monthly post stats retrieved successfully.',
+            });
+    
+        } catch (error) {
+            console.error("Error counting posts by month:", error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error retrieving post stats.',
+            });
+        }
+    };
     
     
+
 }
 
 module.exports = new post_Controller
