@@ -5,6 +5,8 @@ const Schema = mongoose.Schema
 
 require('dotenv').config()
 
+const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+
 const User = new Schema({
     email: {
         type: String,
@@ -103,7 +105,7 @@ User.statics.login = async function(email, password){
 }
 // change password
 User.statics.change_pass = async function(email, password, is_reset = false){
-
+    
     const user = await this.findOne({email})
 
     // if(!validator.isStrongPassword(password)){
@@ -124,7 +126,7 @@ User.statics.change_pass = async function(email, password, is_reset = false){
     const salt = await bcrypt.genSalt(10)
     const hass = await bcrypt.hash(password, salt)
 
-    const updated_user = await this.findOneAndUpdate({email}, {password: hass}, {new: true})
+    const updated_user = await this.findOneAndUpdate({email}, {password: hass}, {new: true})    
 
     return updated_user
 }
