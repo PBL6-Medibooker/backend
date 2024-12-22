@@ -13,8 +13,8 @@ app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
-  console.log(req.path, req.method);
-  next();
+    console.log(req.path, req.method);
+    next();
 });
 
 app.set("trust proxy", true);
@@ -24,5 +24,5 @@ db.connect();
 routes(app);
 
 app.listen(process.env.PORT, () => {
-  console.log("Backend server running on port", process.env.PORT);
+    console.log("Backend server running on port", process.env.PORT);
 });

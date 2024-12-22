@@ -441,8 +441,6 @@ class doctor_Controller{
             });
         }
     };
-
-
     
     getDoctorStat = async (req, res) => {
         try {
