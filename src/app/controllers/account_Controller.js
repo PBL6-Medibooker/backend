@@ -1,8 +1,8 @@
 const User = require('../models/User')
 const Doctor = require('../models/Doctor')
 const Admin_Access = require('../models/Admin_Access')
-
 const Appointment = require('../models/Appointment')
+
 const cloudinary = require('../utils/cloudinary')
 
 const fs = require('fs')
@@ -10,6 +10,7 @@ const ejs = require('ejs')
 const path = require('path')
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
+const mongoose = require('mongoose')
 const nodemailer = require('nodemailer')
 
 require('dotenv').config()
@@ -245,6 +246,11 @@ class account_Controller{
 
     soft_Delete_Account = async(req, res) =>{
         try{
+            const session = await mongoose.startSession()
+
+            // Start transaction
+            session.startTransaction()
+
             // get id list
             const {account_Ids} = req.body
 
@@ -256,15 +262,31 @@ class account_Controller{
             // update
             const result = await User.updateMany(
                 {_id: {$in: account_Ids}},
-                {is_deleted: true}
+                {is_deleted: true},
+                {session}
             )
+
+            // cancel all appointment with the same user_id
+            const cancel_appointment = await Appointment.deleteMany(
+                {user_id: {$in: account_Ids}},
+                {session}
+            )
+
+            // Commit the transaction
+            await session.commitTransaction()
+            session.endSession()
 
             res.status(200).json({
                 message: 'Account soft deleted',
-                modifiedCount: result.modifiedCount
+                modifiedCount: result.modifiedCount,
+                canceledAppointments: cancel_appointment.deletedCount
             })
 
         }catch(error){
+            // Rollback transaction on error
+            await session.abortTransaction()
+            session.endSession()
+
             console.log(error.message)
             res.status(400).json({error: error.message})
         }
@@ -299,6 +321,11 @@ class account_Controller{
 
     perma_Delete_Account = async(req, res) =>{
         try{
+            const session = await mongoose.startSession()
+
+            // Start transaction
+            session.startTransaction()
+
             // get id list
             const {account_Ids} = req.body
 
@@ -307,8 +334,21 @@ class account_Controller{
                 return res.status(400).json({error: 'No IDs provided'})
             }
 
+            // Find doctor_ids in Appointment collection
+            const doctors_in_appointments = await Appointment.distinct('doctor_id')
+
+            // Filter account_Ids to exclude those that exist as doctor_id
+            const filtered_Ids = account_Ids.filter(
+                id => !doctors_in_appointments.includes(id)
+            )
+
+            // If no valid account IDs remain
+            if (filtered_Ids.length === 0) {
+                return res.status(400).json({ error: 'No valid accounts to delete' })
+            }
+
             // Find the accounts to delete and retrieve their profile image public_ids
-            const accounts = await User.find({ _id: { $in: account_Ids } }, 'profile_image proof')
+            const accounts = await User.find({ _id: { $in: filtered_Ids } }, 'profile_image proof')
 
             // Prepare an array of public_ids to delete from Cloudinary
             const public_Ids = accounts.flatMap(account => [
@@ -340,15 +380,31 @@ class account_Controller{
 
             // delete
             const result = await User.deleteMany(
-                {_id: {$in: account_Ids}}
+                {_id: {$in: filtered_Ids}},
+                {session}
             )
+
+            // cancel all appointment with the same user_id
+            const cancel_appointment = await Appointment.deleteMany(
+                {user_id: {$in: filtered_Ids}},
+                {session}
+            )
+
+            // Commit the transaction
+            await session.commitTransaction()
+            session.endSession()
 
             res.status(200).json({
                 message: 'Account deleted',
-                modifiedCount: result.modifiedCount
+                modifiedCount: result.modifiedCount,
+                canceledAppointments: cancel_appointment.deletedCount
             })
 
         }catch(error){
+            // Rollback transaction on error
+            await session.abortTransaction()
+            session.endSession()
+
             console.log(error.message)
             res.status(400).json({error: error.message})
         }
