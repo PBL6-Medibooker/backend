@@ -15,7 +15,7 @@ const Schema = mongoose.Schema
 
 require("dotenv").config()
 
-const default_profile_img = process.env.DEFAULT_PROFILE_IMG
+// const default_profile_img = process.env.DEFAULT_PROFILE_IMG
 
 const Doctor_Schema = new Schema({
     speciality_id: {
@@ -85,7 +85,7 @@ Doctor_Schema.statics.add_Doctor = async function(email, password, username, pho
         username, 
         phone, 
         proof, 
-        profile_image: default_profile_img})
+        profile_image: null})
 
     return doctor
 }
