@@ -7,7 +7,8 @@ const { upload_image, uploadPDF } = require("../middleware/multer")
 
 router.post(
     '/login', 
-    account_Controller.acc_Login)
+    account_Controller.acc_Login
+)
 router.post(
     "/signup", 
     uploadPDF.single("proof"), (req, res) => {
@@ -72,5 +73,10 @@ router.get(
 router.get(
     '/confirm-acc/:token',
     account_Controller.confirm_Account
+)
+router.get(
+    "/get-user-profile",
+    require_Auth.Auth_User,
+    account_Controller.userProfile
 )
 module.exports = router

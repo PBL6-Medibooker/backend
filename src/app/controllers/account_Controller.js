@@ -651,6 +651,17 @@ class account_Controller{
             return res.status(400).send(html_Error_Content)
         }
     }
+
+    userProfile = async (req, res) => {
+        try {
+            const user = req.user
+        
+            res.json({ success: true, user })
+        } catch (error) {
+            console.error(error)
+            res.status(500).json({ success: false, message: "Server error" })
+        }
+    }
 }
 
 module.exports = new account_Controller

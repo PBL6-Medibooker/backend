@@ -90,13 +90,15 @@ require("dotenv").config()
                 const {_id} = jwt.verify(token, process.env.JWTSecret)
         
                 //find user by _id
-                const info = await User.findOne({_id}).select('email')
+                const info = await User.findOne({ _id })
+                    .populate("speciality_id", "name")
+                    .populate("region_id", "name")
 
                 if (!info) {
                     return res.status(401).json({ error: 'Not authorized.' })
                 }
 
-                req.user = info.email
+                req.user = info
                 next()
         
             }catch (error){
@@ -104,6 +106,7 @@ require("dotenv").config()
                 return res.status(401).json({error: 'Request not authorized'})
             }
         }
+          
     }    
 
 module.exports = new requireAuth()
