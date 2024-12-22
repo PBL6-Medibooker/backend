@@ -634,7 +634,7 @@ class account_Controller{
                 throw new Error('No user found')
             }
 
-            return res.status(200).send('<h1>Đã xác nhận tài khoản thành công (cái này để tạm, sau sẽ thay bằng đường dẫn)</h1>')
+            return res.status(200).send('<h1>Đã xác nhận tài khoản thành công</h1>')
 
         } catch (error) {
             const error_Message =
