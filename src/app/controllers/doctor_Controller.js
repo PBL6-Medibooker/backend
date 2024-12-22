@@ -360,7 +360,7 @@ class doctor_Controller{
             const {name} = req.body
     
             const doctors = await Doctor.find({
-                name: {$regex: name, $options: 'i'}
+                username: {$regex: name, $options: 'i'}
             }).populate('speciality_id', 'name')
             .populate('region_id', 'name')
     
