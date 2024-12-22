@@ -309,15 +309,20 @@ class doctor_Controller{
 
     get_Filtered_Doctor_List = async(req, res) =>{
         try{
-            const {speciality, region} = req.body
-
+            const {speciality, region, verified} = req.body
+            
             let query = {}
 
+            // Ensure `verified` is either true or false
+            if (verified === true || verified === false) {
+                query.verified = verified
+            }
+            // Find speciality
             if(speciality){
                 const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
                 query.speciality_id = speciality_id._id
             }
-
+            // Find region
             if(region){
                 const region_id = await Region.findOne({name: region}, {_id: 1})
                 query.region_id = region_id._id
@@ -607,15 +612,20 @@ class doctor_Controller{
     
     get_Filtered_Doctor_List_Main_Info_Only = async(req, res) =>{
         try{
-            const {speciality, region} = req.body
-
+            const {speciality, region, verified} = req.body
+            
             let query = {}
 
+            // Ensure `verified` is either true or false
+            if (verified === true || verified === false) {
+                query.verified = verified
+            }
+            // Find speciality
             if(speciality){
                 const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
                 query.speciality_id = speciality_id._id
             }
-
+            // Find region
             if(region){
                 const region_id = await Region.findOne({name: region}, {_id: 1})
                 query.region_id = region_id._id
