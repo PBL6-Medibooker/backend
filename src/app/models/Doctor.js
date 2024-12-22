@@ -54,15 +54,15 @@ Doctor_Schema.path('active_hours').default(() => [])
 Doctor_Schema.statics.add_Doctor = async function(email, password, username, phone, proof) {
     //validation
     if(!email || !password){
-        throw new Error('Email and password is required!')
+        throw new Error('Cần phải có email và mật khẩu!')
     }
     
     if(!validator.isEmail(email)){
-        throw new Error('Invalid email!')
+        throw new Error('Email không hợp lệ!')
     }
 
     if(!validator.isStrongPassword(password)){
-        throw new Error('Password not strong enough!')
+        throw new Error('Mật khẩu không đủ mạnh!')
     }
 
     // if(!validator.isMobilePhone(phone, 'vi-VN')){
@@ -73,7 +73,7 @@ Doctor_Schema.statics.add_Doctor = async function(email, password, username, pho
     const user_exists = await User.findOne({email})
 
     if(user_exists || doc_exists){
-        throw new Error('Email already in use!')
+        throw new Error('Email đã tồn tại!')
     }
     //hassing password
     const salt = await bcrypt.genSalt(10)

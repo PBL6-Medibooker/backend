@@ -12,6 +12,7 @@ const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const ejs = require("ejs");
 const crypto = require("crypto");
+const Admin_Access = require("../models/Admin_Access");
 
 require("dotenv").config();
 
@@ -32,7 +33,6 @@ class account_Controller {
       acc = await User.login(email, password);
 
       if (acc.is_deleted) {
-        // console.log("Login failed. Account has been soft-deleted: ", email);
         return res.status(403).json({
           error:
             "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
@@ -41,6 +41,11 @@ class account_Controller {
 
       const token = this.create_Token(acc._id);
 
+      const adminAccess = await Admin_Access.findOne({ user_id: acc._id })
+      if (adminAccess instanceof Admin_Access) {
+          return res.status(200).json({ email, token, adminAccess })
+      }
+      
       if (acc instanceof Doctor) {
         const verified = acc.verified;
         res.status(200).json({ email, token, verified });
@@ -234,6 +239,11 @@ class account_Controller {
 
   soft_Delete_Account = async (req, res) => {
     try {
+      const session = await mongoose.startSession()
+
+      // Start transaction
+      session.startTransaction()
+
       // get id list
       const { account_Ids } = req.body;
 
@@ -249,16 +259,32 @@ class account_Controller {
       // update
       const result = await User.updateMany(
         { _id: { $in: account_Ids } },
-        { is_deleted: true }
+        { is_deleted: true },
+        {session}
       );
 
-      res.status(200).json({
-        message: "Account soft deleted",
+      // cancel all appointment with the same user_id
+      const cancel_appointment = await Appointment.deleteMany(
+        {user_id: {$in: account_Ids}},
+        {session}
+    )
+
+    // Commit the transaction
+    await session.commitTransaction()
+    session.endSession()
+
+    res.status(200).json({
+        message: 'Account soft deleted',
         modifiedCount: result.modifiedCount,
-      });
+        canceledAppointments: cancel_appointment.deletedCount
+    })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      // Rollback transaction on error
+      await session.abortTransaction()
+      session.endSession()
+
+      console.log(error.message)
+      res.status(400).json({error: error.message})
     }
   };
 
@@ -294,6 +320,11 @@ class account_Controller {
 
   perma_Delete_Account = async (req, res) => {
     try {
+      const session = await mongoose.startSession()
+
+            // Start transaction
+            session.startTransaction()
+
       // get id list
       const { account_Ids } = req.body;
 
@@ -306,11 +337,21 @@ class account_Controller {
         return res.status(400).json({ error: "No IDs provided" });
       }
 
+      // Find doctor_ids in Appointment collection
+      const doctors_in_appointments = await Appointment.distinct('doctor_id')
+
+      // Filter account_Ids to exclude those that exist as doctor_id
+      const filtered_Ids = account_Ids.filter(
+          id => !doctors_in_appointments.includes(id)
+      )
+
+      // If no valid account IDs remain
+      if (filtered_Ids.length === 0) {
+          return res.status(400).json({ error: 'No valid accounts to delete' })
+      }
+
       // Find the accounts to delete and retrieve their profile image public_ids
-      const accounts = await User.find(
-        { _id: { $in: account_Ids } },
-        "profile_image proof"
-      );
+      const accounts = await User.find({ _id: { $in: filtered_Ids } }, 'profile_image proof')
 
       const public_Ids = accounts.flatMap((account) =>
         [
@@ -324,7 +365,7 @@ class account_Controller {
       // Delete images from Cloudinary
       if (public_Ids.length > 0) {
         const cloudinary_Delete_Promises = public_Ids.map((public_Id) => {
-          return new Promise((resolve, reject) => {
+          return new Promise((resolve) => {
             cloudinary.uploader.destroy(public_Id, (error, result) => {
               if (error) {
                 console.error(`Failed to delete ${public_Id}:`, error.message);
@@ -339,15 +380,33 @@ class account_Controller {
       }
 
       // delete
-      const result = await User.deleteMany({ _id: { $in: account_Ids } });
+      const result = await User.deleteMany(
+        {_id: {$in: filtered_Ids}},
+        {session}
+    )
 
-      res.status(200).json({
-        message: "Account deleted",
-        modifiedCount: result.modifiedCount,
-      });
+      // cancel all appointment with the same user_id
+            const cancel_appointment = await Appointment.deleteMany(
+                {user_id: {$in: filtered_Ids}},
+                {session}
+            )
+
+            // Commit the transaction
+            await session.commitTransaction()
+            session.endSession()
+
+            res.status(200).json({
+                message: 'Account deleted',
+                modifiedCount: result.modifiedCount,
+                canceledAppointments: cancel_appointment.deletedCount
+            })
     } catch (error) {
-      console.log(error.message);
-      res.status(400).json({ error: error.message });
+      // Rollback transaction on error
+      await session.abortTransaction()
+      session.endSession()
+
+      console.log(error.message)
+      res.status(400).json({error: error.message})
     }
   };
 
@@ -1199,6 +1258,17 @@ class account_Controller {
       });
     }
   };
+
+    userProfile = async (req, res) => {
+        try {
+            const user = req.user
+        
+            res.json({ success: true, user })
+        } catch (error) {
+            console.error(error)
+            res.status(500).json({ success: false, message: "Server error" })
+        }
+    }
 }
 
 module.exports = new account_Controller();

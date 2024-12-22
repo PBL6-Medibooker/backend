@@ -36,5 +36,10 @@ router.get(
     region_Controller.countDoctorsByRegion
 )
 
+router.get(
+    '/region-appointment', 
+    region_Controller.countAppointmentsByDoctorWithDetails
+)
+
 
 module.exports = router

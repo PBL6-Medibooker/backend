@@ -1,6 +1,7 @@
 const Admin_Access = require('../models/Admin_Access')
 
 class admin_access_Controller{
+    
 
     add_Admin = async(req, res) =>{
         try{
@@ -88,7 +89,7 @@ class admin_access_Controller{
     admin_Detail = async(req, res) =>{
         try{
             const access_id = req.params.id
-            const admin_Access = await Admin_Access.findById(access_id)
+            const admin_Access = await Admin_Access.findOne({ user_id: access_id })
                                 .populate('user_id', 'email username profile_image')
 
             res.status(200).json(admin_Access)

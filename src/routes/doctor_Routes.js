@@ -59,4 +59,13 @@ router.get(
     doctor_Controller.getTopDoctors
 )
 
+router.post(
+    "/stat-doctor",
+    doctor_Controller.getDoctorStat
+)
+router.post(
+    '/filter-doctor-list-main', 
+    doctor_Controller.get_Filtered_Doctor_List_Main_Info_Only
+)
+
 module.exports = router

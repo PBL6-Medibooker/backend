@@ -42,22 +42,22 @@ const User = new Schema({
     is_deleted: {
         type: Boolean,
         default: true
-    },
+    }
 }, { timestamps: true })
 
 // sign up
 User.statics.add_User = async function(email, password, username, phone) {
     //validation
     if(!email || !password){
-        throw new Error('Email and password is required!')
+        throw new Error('Cần phải có email và mật khẩu!')
     }
     
     if(!validator.isEmail(email)){
-        throw new Error('Invalid email!')
+        throw new Error('Email không hợp lệ!')
     }
 
     if(!validator.isStrongPassword(password)){
-        throw new Error('Password not strong enough!')
+        throw new Error('Mật khẩu không đủ mạnh!')
     }
 
     // if(!validator.isMobilePhone(phone, 'vi-VN')){
@@ -67,7 +67,7 @@ User.statics.add_User = async function(email, password, username, phone) {
     const exists = await this.findOne({email})
 
     if(exists){
-        throw new Error('Email already in use!')
+        throw new Error('Email đã tồn tại!')
     }
     //hassing password
     const salt = await bcrypt.genSalt(10)
@@ -86,19 +86,19 @@ User.statics.add_User = async function(email, password, username, phone) {
 User.statics.login = async function(email, password){
     //validation
     if(!email || !password){
-        throw new Error('No empty field!')
+        throw new Error('Thiếu email hoặc mật khẩu')
     }
 
     const user = await this.findOne({email})
 
     if(!user){
-        throw new Error('No user found')
+        throw new Error('Không tìm thấy người dùng')
     }
 
     const match = await bcrypt.compare(password, user.password)
 
     if(!match){
-        throw new Error('Invalid login')
+        throw new Error('Sai mật khẩu!')
     }
 
     return user
@@ -119,7 +119,7 @@ User.statics.change_pass = async function(email, password, is_reset = false){
     }
 
     if(match){
-        throw new Error('New password must be different from the old one')
+        throw new Error('Mật khẩu mới phải khác mật khẩu cũ')
     }
 
     //hassing password

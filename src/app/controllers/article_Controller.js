@@ -161,7 +161,6 @@ class article_Controller {
     try {
       const article_id = req.params.id;
       const { article_title, article_content } = req.body;
-      // const article_image = req.file ? req.file.buffer : null
 
       let article = await Article.findById(article_id);
       if (!article) return res.status(404).json({ error: "Article not found" });

@@ -66,6 +66,9 @@ router.get(
     post_Controller.getUserWithMostComments
 )
 
-
+router.post(
+    '/get-post-month', 
+    post_Controller.countPostsByMonth
+)
 
 module.exports = router

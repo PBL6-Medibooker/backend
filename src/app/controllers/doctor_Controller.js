@@ -2,6 +2,9 @@ const Doctor = require('../models/Doctor')
 const Region = require('../models/Region')
 const Speciality = require('../models/Speciality')
 const Appointment = require('../models/Appointment')
+const Article = require('../models/Article')
+const Post = require('../models/Post')
+
 const cloudinary = require('../utils/cloudinary')
 
 const fs = require('fs')
@@ -306,15 +309,20 @@ class doctor_Controller{
 
     get_Filtered_Doctor_List = async(req, res) =>{
         try{
-            const {speciality, region} = req.body
-
+            const {speciality, region, verified} = req.body
+            
             let query = {}
 
+            // Ensure `verified` is either true or false
+            if (verified === true || verified === false) {
+                query.verified = verified
+            }
+            // Find speciality
             if(speciality){
                 const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
                 query.speciality_id = speciality_id._id
             }
-
+            // Find region
             if(region){
                 const region_id = await Region.findOne({name: region}, {_id: 1})
                 query.region_id = region_id._id
@@ -357,7 +365,7 @@ class doctor_Controller{
             const {name} = req.body
     
             const doctors = await Doctor.find({
-                name: {$regex: name, $options: 'i'}
+                username: {$regex: name, $options: 'i'}
             }).populate('speciality_id', 'name')
             .populate('region_id', 'name')
     
@@ -433,6 +441,208 @@ class doctor_Controller{
             });
         }
     };
+
+
+    
+    getDoctorStat = async (req, res) => {
+        try {
+            const { year, doctorId } = req.body;
+            const selectedYear = year || new Date().getFullYear();
+    
+            // Check if doctorId is provided
+            if (!doctorId) {
+                return res.status(400).json({ message: "Doctor ID is required." });
+            }
+    
+    
+            const appointmentsResult = await Appointment.aggregate([
+                {
+                    $addFields: {
+                        // Remove the weekday part (e.g., "Thursday ") to leave only the date part
+                        formattedDate: {
+                            $trim: {
+                                input: {
+                                    $arrayElemAt: [
+                                        { $split: ["$appointment_day", " "] },
+                                        1,  // Only take the second part (the date)
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                },
+                {
+                    $addFields: {
+                        // Convert formatted date string to date object
+                        date: {
+                            $dateFromString: {
+                                dateString: "$formattedDate",
+                                format: "%Y-%m-%d",  // The date format (YYYY-MM-DD)
+                            },
+                        },
+                    },
+                },
+                {
+                    $addFields: {
+                        // Extract the year from the date
+                        year: { $year: "$date" },
+                        // Extract year and month as a string (YYYY-MM)
+                        yearMonth: { $dateToString: { format: "%Y-%m", date: "$date" } },
+                    },
+                },
+                {
+                    // Match the selected year and doctor ID
+                    $match: {
+                        year: parseInt(selectedYear, 10),
+                        doctor_id: new mongoose.Types.ObjectId(doctorId),  // Match the doctor by ObjectId
+                        is_deleted: false
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$yearMonth",  // Group by year-month
+                        appointmentCount: { $sum: 1 },  // Count the number of appointments
+                    },
+                },
+                {
+                    $sort: { _id: 1 },  // Sort by year-month
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        month: "$_id",  // Output month as year-month
+                        appointmentCount: 1,  // Include the appointment count
+                    },
+                },
+            ]);
+
+            const articlesResult = await Article.aggregate([
+                {
+                    $addFields: {
+                        yearMonth: { $dateToString: { format: "%Y-%m", date: "$date_published" } },
+                    },
+                },
+                {
+                    // Match the selected year and doctor ID
+                    $match: {
+                        doctor_id: new mongoose.Types.ObjectId(doctorId),
+                        is_deleted: false,
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$yearMonth",  // Group by year-month
+                        articleCount: { $sum: 1 },  // Count the number of articles
+                    },
+                },
+                {
+                    $sort: { _id: 1 },  // Sort by year-month
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        month: "$_id",  // Output month as year-month
+                        articleCount: 1,  // Include the article count
+                    },
+                },
+            ]);
+
+            const postsResult = await Post.aggregate([
+                {
+                    $addFields: {
+                        yearMonth: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                    },
+                },
+                {
+                    $match: {
+                        user_id: new mongoose.Types.ObjectId(doctorId),
+                        is_deleted: false,
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$yearMonth",
+                        postCount: { $sum: 1 },
+                    },
+                },
+                {
+                    $sort: { _id: 1 },
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        month: "$_id",
+                        postCount: 1,
+                    },
+                },
+            ]);
+    
+            // Combine the appointment, article, and post counts
+            const stats = [];
+            for (let i = 1; i <= 12; i++) {
+                const monthString = `${selectedYear}-${i.toString().padStart(2, '0')}`; // Format "YYYY-MM"
+                
+                const appointmentData = appointmentsResult.find(item => item.month === monthString);
+                const articleData = articlesResult.find(item => item.month === monthString);
+                const postData = postsResult.find(item => item.month === monthString);
+    
+                stats.push({
+                    month: i,
+                    appointmentCount: appointmentData ? appointmentData.appointmentCount : 0, 
+                    articleCount: articleData ? articleData.articleCount : 0, 
+                    postCount: postData ? postData.postCount : 0,
+                });
+            }
+    
+    
+            return res.status(200).json({
+                success: true,
+                data: stats,
+                message: 'Monthly appointment and article stats retrieved successfully.',
+            });
+    
+            
+        } catch (err) {
+            console.error("Error:", err);
+            return res.status(500).json({
+                error: "An error occurred.",
+            });
+        }
+    };
+    
+    get_Filtered_Doctor_List_Main_Info_Only = async(req, res) =>{
+        try{
+            const {speciality, region, verified} = req.body
+            
+            let query = {}
+
+            // Ensure `verified` is either true or false
+            if (verified === true || verified === false) {
+                query.verified = verified
+            }
+            // Find speciality
+            if(speciality){
+                const speciality_id = await Speciality.findOne({name: speciality }, {_id: 1})
+                query.speciality_id = speciality_id._id
+            }
+            // Find region
+            if(region){
+                const region_id = await Region.findOne({name: region}, {_id: 1})
+                query.region_id = region_id._id
+            }
+
+            const doctors = await Doctor.find(query)
+            .select('_id username profile_image bio email')
+            .populate('speciality_id', 'name')
+            .populate('region_id', 'name')
+
+            res.status(200).json(doctors)
+        }catch(error){
+            console.log(error.message)
+            res.status(400).json({error: error.message})
+        }
+    }  
+    
 }
 
 module.exports = new doctor_Controller
