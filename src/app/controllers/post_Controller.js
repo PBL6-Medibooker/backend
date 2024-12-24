@@ -64,11 +64,11 @@ class post_Controller{
         try{
             const {email} = req.body
             const user = await User.findOne({email}, {_id: 1})
+            
+            const posts = await Post.find({user_id: user._id})
                 .populate('user_id', 'email username __t profile_image')
                 .populate('speciality_id', 'name')
                 .populate('post_comments.replier', 'email username __t profile_image')
-            
-            const posts = await Post.find({user_id: user._id})
 
             res.status(200).json(posts)
         }catch(error){
@@ -87,7 +87,6 @@ class post_Controller{
             }
             
             const posts = await Post.find({speciality_id: speciality._id})
-
                 .populate('user_id', 'email username __t profile_image')
                 .populate('speciality_id', 'name')
                 .populate('post_comments.replier', 'email username __t profile_image')

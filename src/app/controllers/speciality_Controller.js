@@ -1,60 +1,56 @@
-const Speciality = require('../models/Speciality')
-const Doctor = require('../models/Doctor')
-const cloudinary = require('../utils/cloudinary')
+const Speciality = require("../models/Speciality");
+const Doctor = require("../models/Doctor");
+const cloudinary = require("../utils/cloudinary");
 
-const fs = require('fs')
-const mongoose = require('mongoose')
+const fs = require("fs");
+const mongoose = require("mongoose");
 
-require('dotenv').config()
+require("dotenv").config();
 
 class speciality_Controller {
-
     add_Speciality = async (req, res) => {
         try {
-            // wait for file upload
-            // await uploadPromise(req, res)
-
             // get info from body
-            const { name, description } = req.body
-            // const speciality_image = req.file ? req.file.buffer : null
+            const { name, description } = req.body;
 
-            const exists_spec = await Speciality.findOne({ name })
+            const exists_spec = await Speciality.findOne({ name });
 
             if (exists_spec) {
-                throw new Error('Speciality already exits')
+                throw new Error("Speciality already exits");
             }
 
-            //create
-            let speciality = await Speciality.create({ name, description })
+            if (req.fileValidationError) throw new Error(req.fileValidationError);
 
-            let speciality_image = null
+            //create
+            let speciality = await Speciality.create({ name, description });
+
+            let speciality_image = null;
 
             if (req.file) {
-
-                const image_name = `${speciality._id}_${Date.now()}`
+                const image_name = `${speciality._id}_${Date.now()}`;
 
                 const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-                    folder: 'PBL6/specialities',
-                    public_id: image_name,
-                    overwrite: true // Replace any existing file with the same name
-                })
-        
-                speciality_image = uploadResult.secure_url
-                fs.unlinkSync(req.file.path) // Delete temporary file
+                    folder: "PBL6/specialities",
+                    public_id: speciality._id,
+                    overwrite: true, // Replace any existing file with the same name
+                });
+
+                speciality_image = uploadResult.secure_url;
+                fs.unlinkSync(req.file.path); // Delete temporary file
             }
 
             if (speciality_image) {
-                speciality.speciality_image = speciality_image
-                await speciality.save()
+                speciality.speciality_image = speciality_image;
+                await speciality.save();
             }
 
-            res.status(201).json(speciality)
+            res.status(201).json(speciality);
         } catch (error) {
-            console.log(error.message)
-            res.status(400).json({ error: error.message })
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
-    
+    };
+
     get_Speciality_By_ID = async (req, res) => {
         try {
             // Get _id from req.body
@@ -65,101 +61,97 @@ class speciality_Controller {
 
             // If not found
             if (!speciality) {
-                return res.status(404).json({error: 'Speciality not found'});
+                return res.status(404).json({ error: "Speciality not found" });
             }
 
             res.status(200).json(speciality);
         } catch (error) {
             console.log(error.message);
-            res.status(400).json({error: error.message});
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
 
     get_Speciality_List = async (req, res) => {
         try {
             let specialities;
-            const { hidden_state } = req.body
-        
+            const { hidden_state } = req.body;
+
             // find list of speciality
-            if (hidden_state == 'true') {
-                specialities = await Speciality.find({is_deleted: true})
+            if (hidden_state == "true") {
+                specialities = await Speciality.find({ is_deleted: true });
             } else {
-                specialities = await Speciality.find({is_deleted: false})
+                specialities = await Speciality.find({ is_deleted: false });
             }
 
-            res.status(200).json(specialities)
+            res.status(200).json(specialities);
         } catch (error) {
-            console.log(error.message)
-            res.status(400).json({error: error.message})
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
 
     update_Speciality = async (req, res) => {
         try {
-            // wait for file upload
-            // await uploadPromise(req, res)
-
             // get info from body
-            const { name, description } = req.body
-            // const speciality_image = req.file ? req.file.buffer : null
+            const { name, description } = req.body;
 
             // get id
-            const speciality_Id = req.params.id
+            const speciality_Id = req.params.id;
 
             // find speciality
-            let speciality = await Speciality.findById(speciality_Id)
+            let speciality = await Speciality.findById(speciality_Id);
 
             if (!speciality) {
-                return res.status(404).json({ error: "Speciality not found" })
+                return res.status(404).json({ error: "Speciality not found" });
             }
 
-            let speciality_image = null
+            if (req.fileValidationError) throw new Error(req.fileValidationError);
+
+            let speciality_image = speciality.speciality_image;
 
             if (req.file) {
-
-                const image_name = `${speciality._id}_${Date.now()}`
+                // const image_name = `${speciality._id}_${Date.now()}`;
 
                 const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-                    folder: 'PBL6/specialities',
-                    public_id: image_name,
-                    overwrite: true // Replace any existing file with the same name
-                })
-        
-                speciality_image = uploadResult.secure_url
-                fs.unlinkSync(req.file.path) // Delete temporary file
+                    folder: "PBL6/specialities",
+                    public_id: speciality._id,
+                    overwrite: true, // Replace any existing file with the same name
+                });
+
+                speciality_image = uploadResult.secure_url;
+                fs.unlinkSync(req.file.path); // Delete temporary file
             }
 
             // update
             if (name) {
                 const existingSpeciality = await Speciality.findOne({
                     name,
-                    _id: {$ne: speciality_Id},
-                })
+                    _id: { $ne: speciality_Id },
+                });
                 if (existingSpeciality) {
-                    throw new Error('Speciality already exits')
+                    throw new Error("Speciality already exits");
                 }
-                speciality.name = name
+                speciality.name = name;
             }
             if (description) {
-                speciality.description = description
-            }
-            if (speciality_image) {
-                speciality.speciality_image = speciality_image
+                speciality.description = description;
             }
 
-            await speciality.save()
+            speciality.speciality_image = speciality_image;
 
-            res.status(200).json(speciality)
+            await speciality.save();
+
+            res.status(200).json(speciality);
         } catch (error) {
-            console.log(error.message)
-            res.status(400).json({error: error.message})
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
 
     soft_Delete_Specialty = async (req, res) => {
         try {
             // get id list
-            const { speciality_Ids } = req.body
+            const { speciality_Ids } = req.body;
 
             // if no ids
             if (
@@ -167,29 +159,29 @@ class speciality_Controller {
                 !Array.isArray(speciality_Ids) ||
                 speciality_Ids.length === 0
             ) {
-                return res.status(400).json({error: 'No IDs provided'})
+                return res.status(400).json({ error: "No IDs provided" });
             }
 
             // update
             const result = await Speciality.updateMany(
-                {_id: {$in: speciality_Ids}},
-                {is_deleted: true}
-            )
+                { _id: { $in: speciality_Ids } },
+                { is_deleted: true }
+            );
 
             res.status(200).json({
-                message: 'Speciality soft deleted',
+                message: "Speciality soft deleted",
                 modifiedCount: result.modifiedCount,
-            })
+            });
         } catch (error) {
-            console.log(error.message)
-            res.status(400).json({error: error.message})
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
 
     restore_Deleted_Specialty = async (req, res) => {
         try {
             // get id list
-            const {speciality_Ids} = req.body
+            const { speciality_Ids } = req.body;
 
             // if no ids
             if (
@@ -197,29 +189,29 @@ class speciality_Controller {
                 !Array.isArray(speciality_Ids) ||
                 speciality_Ids.length === 0
             ) {
-                return res.status(400).json({error: 'No IDs provided'})
+                return res.status(400).json({ error: "No IDs provided" });
             }
 
             // update
             const result = await Speciality.updateMany(
-                {_id: { $in: speciality_Ids}},
-                {is_deleted: false}
-            )
+                { _id: { $in: speciality_Ids } },
+                { is_deleted: false }
+            );
 
             res.status(200).json({
-                message: 'Speciality restored',
+                message: "Speciality restored",
                 modifiedCount: result.modifiedCount,
-            })
+            });
         } catch (error) {
-            console.log(error.message)
-            res.status(400).json({error: error.message})
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
 
     perma_Delete_Specialty = async (req, res) => {
         try {
             // get id list
-            const { speciality_Ids } = req.body
+            const { speciality_Ids } = req.body;
 
             // if no ids
             if (
@@ -227,58 +219,63 @@ class speciality_Controller {
                 !Array.isArray(speciality_Ids) ||
                 speciality_Ids.length === 0
             ) {
-                return res.status(400).json({error: 'No IDs provided'})
+                return res.status(400).json({ error: "No IDs provided" });
             }
 
             // Find the specialities to delete and retrieve their image public_ids
-            const specialities = await Speciality.find({ _id: { $in: speciality_Ids } }, 'speciality_image')
+            const specialities = await Speciality.find(
+                { _id: { $in: speciality_Ids } },
+                "speciality_image"
+            );
 
             // Prepare an array of public_ids to delete from Cloudinary
-            const public_Ids = specialities.map(speciality => {
-                const image_Url = speciality.speciality_image
+            const public_Ids = specialities.map((speciality) => {
+                const image_Url = speciality.speciality_image;
 
-                if (!image_Url) return null
+                if (!image_Url) return null;
 
                 // Extract public_id from URL
-                const url_Parts = image_Url.split('/')
-                const public_Id = url_Parts.slice(-3).join('/')
-                return public_Id //public_Id
-            }).filter(public_Id => public_Id)
+                const public_Id = image_Url
+                    .split("/")
+                    .slice(-3)
+                    .join("/")
+                    .replace(/\.\w+$/, "");
 
-            console.log(public_Ids)
+                return public_Id; //public_Id
+            }).filter((public_Id) => public_Id);
 
             // Delete images from Cloudinary
             if (public_Ids.length > 0) {
-                const cloudinary_Delete_Promises = public_Ids.map(public_Id => {
-                    return new Promise((resolve) => {
-                        cloudinary.uploader.destroy(public_Id, (error, result) => {
-                            console.log({ error, result })
-                            if (error) {
-                                console.error(`Failed to delete ${public_Id}:`, error.message)
-                                return resolve(null)
-                            }
-                            resolve(result)
-                        })
-                    })
-                })
+                const cloudinary_Delete_Promises = public_Ids.map((public_Id) => {
+                return new Promise((resolve, reject) => {
+                    cloudinary.uploader.destroy(public_Id, (error, result) => {
+                    console.log({ error, result });
+                    if (error) {
+                        console.error(`Failed to delete ${public_Id}:`, error.message);
+                        return resolve(null);
+                    }
+                    resolve(result);
+                    });
+                });
+                });
 
-                await Promise.all(cloudinary_Delete_Promises) // Wait for all deletions to complete
+                await Promise.all(cloudinary_Delete_Promises); // Wait for all deletions to complete
             }
 
             // delete
             const result = await Speciality.deleteMany({
-                _id: {$in: speciality_Ids},
-            })
+                _id: { $in: speciality_Ids },
+            });
 
             res.status(200).json({
-                message: 'Speciality deleted',
+                message: "Speciality deleted",
                 deletedCount: result.deletedCount,
-            })
+            });
         } catch (error) {
-            console.log(error.message)
-            res.status(400).json({ error: error.message })
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
 
     getSpecData = async (req, res) => {
         try {
@@ -291,7 +288,7 @@ class speciality_Controller {
             const specData = await Speciality.findById(speciality_Id);
             res.json({ success: true, specData });
         } catch (error) {
-            console.log(error);
+        console.log(error);
             res.json({ success: false, message: error.message });
         }
     };
@@ -331,9 +328,9 @@ class speciality_Controller {
                 {
                 $sort: { doctorCount: -1 },
                 },
-                // {
-                // $limit: 5,
-                // },
+                {
+                $limit: 5,
+                },
             ]);
 
             if (!result.length) {
@@ -350,7 +347,6 @@ class speciality_Controller {
             });
         }
     };
-
 }
 
-module.exports = new speciality_Controller()
+module.exports = new speciality_Controller();

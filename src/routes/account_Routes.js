@@ -1,76 +1,77 @@
-const account_Controller = require('../app/controllers/account_Controller')
-const require_Auth = require('../middleware/require_Auth')
+const account_Controller = require("../app/controllers/account_Controller");
+const require_Auth = require("../middleware/require_Auth");
 
-const express = require('express')
-const router = express.Router()
-const { upload_image, uploadPDF } = require("../middleware/multer")
+const express = require("express");
+const router = express.Router();
+const { upload_image, uploadPDF } = require("../middleware/multer");
 
 router.post(
-    '/login', 
-    account_Controller.acc_Login)
+    "/login", 
+    account_Controller.acc_Login
+);
 router.post(
-    "/signup", 
-    uploadPDF.single("proof"), (req, res) => {
-        // Log để xác minh middleware đúng được gọi
-        // console.log("Middleware uploadPDF được kích hoạt")
-        // if (!req.file) {
-        //   return res
-        //     .status(400)
-        //     .json({ error: "No file uploaded or invalid file type" })
-        // }
-        account_Controller.acc_Signup(req, res)
-    })
+    "/signup",
+    uploadPDF.single("proof"),
+    account_Controller.acc_Signup
+);
 router.post(
-    '/acc-list', 
+    "/acc-list", 
     account_Controller.get_Account_List
-)
+);
 router.post(
-    '/get-acc-mail', 
+    "/get-acc-mail", 
     account_Controller.get_Account_By_Mail
-)
+);
 router.post(
-    '/get-acc/:id', 
-    account_Controller.get_Account_By_Id)
+    "/get-acc/:id", 
+    account_Controller.get_Account_By_Id
+);
 router.post(
-    '/update-acc-info/:id', 
-    upload_image.single('profile_image'), 
+    "/update-acc-info/:id",
+    upload_image.single("profile_image"),
     account_Controller.update_Acc_Info
-)
+);
 router.post(
-    '/soft-delete-acc', 
+    "/soft-delete-acc", 
     account_Controller.soft_Delete_Account
-)
+);
 router.post(
-    '/perma-delete-acc', 
+    "/perma-delete-acc", 
     account_Controller.perma_Delete_Account
-)
+);
 router.post(
-    '/restore-acc', 
+    "/restore-acc", 
     account_Controller.restore_Deleted_Account
-)
+);
 router.post(
-    '/change-pass', 
+    "/change-pass", 
     account_Controller.change_password
-)
+);
 router.post(
-    '/forgot-pass', 
+    "/forgot-pass", 
     account_Controller.forgot_password
-)
-router.post(
-    '/reset-password/:token', 
+);
+router.get(
+    "/reset-password/:token", 
     account_Controller.reset_password
-)
+);
 router.get(
     "/get-admin-profile",
     require_Auth.Auth_Admin,
     account_Controller.getProfileAdmin
-)
+);
 router.get(
-    "/top-users",
+    "/top-users", 
     account_Controller.getTopUsers
-)
-router.post(
-    '/confirm-acc/:token',
+);
+router.get(
+    "/confirm-acc/:token", 
     account_Controller.confirm_Account
-)
-module.exports = router
+);
+router.get(
+    "/get-user-profile",
+    require_Auth.Auth_User,
+    account_Controller.userProfile
+);
+
+module.exports = router;
