@@ -7,6 +7,10 @@ const Post = require('../models/Post')
 
 const cloudinary = require('../utils/cloudinary')
 
+const Moment = require('moment');
+const MomentRange = require('moment-range');
+const moment = MomentRange.extendMoment(Moment);
+
 const fs = require('fs')
 const mongoose = require('mongoose')
 
@@ -218,94 +222,228 @@ class doctor_Controller{
         }
     }
 
-    update_Doctor_Active_Hour = async(req, res) =>{
-        try{
-            const {
-                day, start_time, end_time, hour_type, appointment_limit, 
-                old_day, old_start_time, old_end_time, old_hour_type
-            } = req.body
+    // update_Doctor_Active_Hour = async(req, res) =>{
+    //     try{
+    //         const {
+    //             day, start_time, end_time, hour_type, appointment_limit, 
+    //             old_day, old_start_time, old_end_time, old_hour_type
+    //         } = req.body
 
-            if(!day || !start_time || !end_time || !hour_type){
-                throw new Error('Missing information')
-            }
+    //         if(!day || !start_time || !end_time || !hour_type){
+    //             throw new Error('Missing information')
+    //         }
 
-            // get id
-            const account_Id = req.params.id
+    //         // get id
+    //         const account_Id = req.params.id
 
-            // check overlap
-            const excluded_time = {
-                day: old_day, 
-                start_time: old_start_time, 
-                end_time: old_end_time, 
-                hour_type: old_hour_type
-            }
-            const new_Active_Hour = {day, start_time, end_time, hour_type, appointment_limit}
+    //         // check overlap
+    //         const excluded_time = {
+    //             day: old_day, 
+    //             start_time: old_start_time, 
+    //             end_time: old_end_time, 
+    //             hour_type: old_hour_type
+    //         }
+    //         const new_Active_Hour = {day, start_time, end_time, hour_type, appointment_limit}
 
-            const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time)
+    //         const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time)
             
-            if(is_overlap){
-                throw new Error('Overlapping time frame')
+    //         if(is_overlap){
+    //             throw new Error('Overlapping time frame')
+    //         }
+
+    //         // find doctor
+    //         const doctor = await Doctor.findById(account_Id)
+
+    //         // find old active hour
+    //         const index = doctor.active_hours.findIndex(time_frame =>
+    //             time_frame.day === old_day &&
+    //             time_frame.start_time === old_start_time &&
+    //             time_frame.end_time === old_end_time &&
+    //             time_frame.hour_type === old_hour_type
+    //         )
+
+    //         // update
+    //         doctor.active_hours[index] = new_Active_Hour
+
+    //         await doctor.save()
+
+    //         res.status(200).json({change: doctor.active_hours[index], 
+    //             active_hours: doctor.active_hours})
+
+    //     }catch(error){
+    //         console.log(error.message)
+    //         res.status(400).json({error: error.message})
+    //     }
+    // }
+
+    
+     update_Doctor_Active_Hour = async (req, res) => {
+        try {
+            const {
+                day,
+                start_time,
+                end_time,
+                hour_type,
+                appointment_limit,
+                old_day,
+                old_start_time,
+                old_end_time,
+                old_hour_type
+            } = req.body;
+    
+            if (!day || !start_time || !end_time || !hour_type) {
+                throw new Error('Missing information');
             }
 
-            // find doctor
-            const doctor = await Doctor.findById(account_Id)
-
-            // find old active hour
+            console.log(old_day);
+            
+    
+            // Get doctor ID
+            const account_Id = req.params.id;
+    
+            // Check for overlapping active hours
+            const excluded_time = {
+                day: old_day,
+                start_time: old_start_time,
+                end_time: old_end_time,
+                hour_type: old_hour_type
+            };
+            const new_Active_Hour = { day, start_time, end_time, hour_type, appointment_limit };
+    
+            const is_overlap = await Doctor.Is_Time_Overlap(new_Active_Hour, account_Id, excluded_time);
+    
+            if (is_overlap) {
+                throw new Error('Overlapping time frame');
+            }
+    
+            // Find doctor
+            const doctor = await Doctor.findById(account_Id);
+    
+            // Find the index of the old active hour
             const index = doctor.active_hours.findIndex(time_frame =>
                 time_frame.day === old_day &&
                 time_frame.start_time === old_start_time &&
                 time_frame.end_time === old_end_time &&
                 time_frame.hour_type === old_hour_type
-            )
+            );
+    
+            if (index === -1) {
+                throw new Error('Old active hour not found');
+            }
+    
+            // Update the active hour
+            doctor.active_hours[index] = new_Active_Hour;
+    
+            // Save updated doctor active hours
+            await doctor.save();
+    
+            const today = moment();
+    
+            const todayFormatted = today.format('YYYY-MM-DD'); // Today's date in 'YYYY-MM-DD' format
 
-            // update
-            doctor.active_hours[index] = new_Active_Hour
+        // Find matching appointments based on old time slots
+        const matchingAppointments = await Appointment.find({
+            doctor_id: account_Id,
+            appointment_time_start: old_start_time.trim(),
+            appointment_time_end: old_end_time.trim(),
+            is_deleted: false,
+            appointment_day: { $regex: `^${old_day}`, $options: 'i' } // Match the old day (case insensitive)
+        });
 
-            await doctor.save()
+        const updatedAppointments = [];
+        for (const appointment of matchingAppointments) {
+            // Extract the date part of the appointment (i.e., 'Monday 2024-12-12' -> '2024-12-12')
+            const appointmentDate = moment(appointment.appointment_day, 'dddd YYYY-MM-DD').format('YYYY-MM-DD');
 
-            res.status(200).json({change: doctor.active_hours[index], 
-                active_hours: doctor.active_hours})
-
-        }catch(error){
-            console.log(error.message)
-            res.status(400).json({error: error.message})
-        }
-    }
-
-    delete_Doctor_Active_Hour = async(req, res) =>{
-        try{
-            const {day, start_time, end_time, hour_type} = req.body
-
-            if(!day || !start_time || !end_time || !hour_type){
-                throw new Error('Missing information')
+            // If the appointment day is in the past (before today), skip it
+            if (appointmentDate < todayFormatted) {
+                console.log(`Skipping appointment on ${appointment.appointment_day} because it's in the past.`);
+                continue;
             }
 
-            // get id
-            const account_Id = req.params.id
+            // If the appointment's day matches the old day, update the appointment
+            const oldDate = moment(appointment.appointment_day, 'dddd YYYY-MM-DD');
+            const newDate = oldDate.clone().day(moment().day(day).isoWeekday()); // Update to new day
 
-            // find doctor
-            const doctor = await Doctor.findById(account_Id)
+            // Update the appointment fields
+            appointment.appointment_day = `${day} ${newDate.format('YYYY-MM-DD')}`;
+            appointment.appointment_time_start = start_time.trim();
+            appointment.appointment_time_end = end_time.trim();
 
-            // find old active hour
+            // Save the updated appointment
+            await appointment.save();
+            updatedAppointments.push(appointment);
+        }
+
+        res.status(200).json({
+            message: 'Active hour updated successfully',
+            updated_active_hour: { day, start_time, end_time, hour_type },
+            updated_appointments: updatedAppointments.length
+        });
+        } catch (error) {
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
+        }
+    };
+    
+
+    delete_Doctor_Active_Hour = async (req, res) => {
+        try {
+            const { day, start_time, end_time, hour_type } = req.body;
+    
+            if (!day || !start_time || !end_time || !hour_type) {
+                throw new Error('Missing information');
+            }
+    
+            // Get doctor ID
+            const account_Id = req.params.id;
+    
+            // Find the doctor
+            const doctor = await Doctor.findById(account_Id);
+    
+            // Find index of the active hour to be deleted
             const index = doctor.active_hours.findIndex(time_frame =>
                 time_frame.day === day &&
                 time_frame.start_time === start_time &&
                 time_frame.end_time === end_time &&
                 time_frame.hour_type === hour_type
-            )
-
-            //delete
-            doctor.active_hours.splice(index, 1)
-            await doctor.save()
-
-            res.status(200).json({message: 'Item deleted succesfully', 
-                active_hours: doctor.active_hours})
-
-        }catch(error){
-            console.log(error.message)
-            res.status(400).json({error: error.message})
+            );
+    
+            if (index === -1) {
+                throw new Error('Active hour not found');
+            }
+    
+            // Delete the active hour
+            doctor.active_hours.splice(index, 1);
+            await doctor.save();
+    
+           
+            const matchingAppointments = await Appointment.find({
+                doctor_id: account_Id,
+                appointment_day: { $regex: `^${day}`, $options: 'i' }, 
+                appointment_time_start: start_time.trim(),
+                appointment_time_end: end_time.trim(),
+            });
+    
+            const deletedAppointments = [];
+    
+            for (const appointment of matchingAppointments) {
+                // Delete the appointment
+                await Appointment.deleteOne({ _id: appointment._id });
+                deletedAppointments.push(appointment);
+            }
+    
+            res.status(200).json({
+                message: 'Active hour and matching appointments deleted successfully',
+                active_hours: doctor.active_hours,
+                deleted_appointments: deletedAppointments.length
+            });
+        } catch (error) {
+            console.log(error.message);
+            res.status(400).json({ error: error.message });
         }
-    }
+    };
+    
 
     get_Filtered_Doctor_List = async(req, res) =>{
         try{
