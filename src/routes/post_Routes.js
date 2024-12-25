@@ -71,4 +71,9 @@ router.post(
     post_Controller.countPostsByMonth
 )
 
+router.post(
+    '/get-comment/:id', 
+    post_Controller.get_Comments
+)
+
 module.exports = router
