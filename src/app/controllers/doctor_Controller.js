@@ -768,7 +768,7 @@ class doctor_Controller{
             }
 
             const doctors = await Doctor.find(query)
-            .select('_id username profile_image bio email')
+            .select('_id username profile_image bio email is_deleted')
             .populate('speciality_id', 'name')
             .populate('region_id', 'name')
 
