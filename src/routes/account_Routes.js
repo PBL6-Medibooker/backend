@@ -73,5 +73,9 @@ router.get(
     require_Auth.Auth_User,
     account_Controller.userProfile
 );
+router.post(
+    "/get-acc-status", 
+    account_Controller.get_Account_Status
+);
 
 module.exports = router;
