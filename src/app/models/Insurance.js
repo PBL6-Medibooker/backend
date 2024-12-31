@@ -1,23 +1,25 @@
 const mongoose = require("mongoose")
 const Schema = mongoose.Schema
 
-const Speciality = new Schema({
+const Insurance = new Schema({
     name: {
         type: String,
-        unique: true,
         required: true,
     },
-    description: {
+    number: {
         type: String,
+        required: true,
     },
-    speciality_image: {
+    location: {
         type: String,
-        default: null,
+        required: true,
+    },
+    exp_date: {
+        type: String,
+        required: true,
     },
     is_deleted: {
         type: Boolean,
         default: false,
     },
 })
-
-module.exports = mongoose.model("Speciality", Speciality)

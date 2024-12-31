@@ -1,72 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- <title>Appointment Reminder</title> -->
+        <style>
+            body {
+                margin: 0;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+                background-color: #f9f9f9;
+                text-align: center;
+            }
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- <title>Appointment Reminder</title> -->
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            text-align: center;
-        }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: #ffffff;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+            img {
+                max-width: 250px;
+                margin-bottom: 10px;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+            }
 
-        img {
-            max-width: 250px;
-            margin-bottom: 10px;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
+            h1 {
+                color: #333;
+                margin-bottom: 20px;
+                text-align: center;
+            }
 
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+            p {
+                color: #666;
+                line-height: 1.6;
+                text-align: left;
+            }
 
-        p {
-            color: #666;
-            line-height: 1.6;
-            text-align: left;
-        }
-        
-        span {
-            font-weight: bold;
-            color: #00a6a9;
-        }
+            span {
+                font-weight: bold;
+                color: #00a6a9;
+            }
 
-        .footer {
-            margin-top: 20px;
-            color: #999;
-            font-size: 12px;
-        }
-    </style>
-</head>
+            .footer {
+                margin-top: 20px;
+                color: #999;
+                font-size: 12px;
+            }
+        </style>
+    </head>
 
-<body>
-    <div class="container">
-        <img src="https://res.cloudinary.com/doityourself/image/upload/v1732509707/MeDi-Booker_igd5wf.png"
-            alt="MediBooker Logo">
-        <h1>Thông báo huỷ lịch hẹn</h1>
-        <p>Chào bạn </p>
-        <p>Lịch hẹn khám của bạn với bác sĩ <span><%= doctor %></span> vào ngày <span><%= appointment_Date %></span> từ <span><%= appointment_time_start %></span> đến <span><%= appointment_time_end %></span> đã bị hủy.</p>
-        <p>Nếu đây là một sự nhầm lẫn hoặc bạn muốn đặt lại lịch hẹn, vui lòng liên hệ với chúng tôi qua email này hoặc ứng dụng MediBooker.</p>
+    <body>
+        <div class="container">
+            <img
+                src="https://res.cloudinary.com/doityourself/image/upload/v1732509707/MeDi-Booker_igd5wf.png"
+                alt="MediBooker Logo" />
+            <h1>Thông báo huỷ lịch hẹn</h1>
+            <p>Chào bạn</p>
+            <p>
+                Lịch hẹn khám của bạn với bác sĩ <span><%= doctor %></span> vào ngày
+                <span><%= appointment_Date %></span> từ
+                <span><%= appointment_time_start %></span> đến
+                <span><%= appointment_time_end %></span> đã bị hủy.
+            </p>
+            <p>
+                Nếu đây là một sự nhầm lẫn hoặc bạn muốn đặt lại lịch hẹn, vui lòng liên hệ với
+                chúng tôi qua email này hoặc ứng dụng MediBooker.
+            </p>
 
-        <p class="footer">Trân trọng! <br> MediBooker Team</p>
-    </div>
-</body>
-
+            <p class="footer">
+                Trân trọng! <br />
+                MediBooker Team
+            </p>
+        </div>
+    </body>
 </html>
